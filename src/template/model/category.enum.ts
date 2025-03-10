@@ -1,0 +1,21 @@
+export enum Categories {
+  Asian = 'Asian',
+  Groom = 'Groom 🤵🏻‍♂️',
+  Bride = 'Bride 👰‍♀️',
+  // Bikini = 'Bikini 👙',
+  // Pregnant = 'Pregnant 🤰🏻',
+  // Black = 'Black 💁🏿‍♀️',
+  Modeling = 'Modeling',
+  Movie = 'Movie 📽️',
+  DisneyCharacter = 'DisneyCharacter',
+  AiFace = 'AiFace',
+  Event = 'Event',
+  Spring = 'Spring',
+  ProfessionalHeadshot = 'ProfessionalHeadshot',
+  Pool = 'Pool',
+  WaterVibe = 'Water vibe 💦',
+  // Christmas = 'Christmas ☃️',
+
+  Baby = 'Baby 👼🏻',
+  // Valentine = 'Valentine 💝',
+}
