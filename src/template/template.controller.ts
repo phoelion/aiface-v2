@@ -1,198 +1,199 @@
 import { Controller, Post, Req, Get, Res, Param, Body, UseInterceptors, UploadedFiles, UseGuards, Patch, UploadedFile, BadRequestException, Logger } from '@nestjs/common';
 import { Response } from 'express';
-import RequestWithUser from 'src/authentication/interface/requestWithUser.interface';
+
 import { TemplateService } from './template.service';
 import createTemplateDto from './dtos/createTemplateDto.dtos';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { multerOptions } from './uploadImage.service';
-import JwtAuthenticationGuard from 'src/authentication/accessToken/jwt-authentication.guard';
+
 import CreateMultiTemplatesDto from './dtos/createMultiTemplate.dto';
-import { Roles } from 'src/decorators/roles.decorator';
-import { RolesGuard } from 'src/guards/roles.guard';
+
 import { diskStorage } from 'multer';
 import * as path from 'path';
-import { UserService } from 'src/users/users.service';
-import { ResizeService } from 'src/services/resizer.service';
+
 import { Cron } from '@nestjs/schedule';
-import { NotificationService } from 'src/services/notification.service';
-import { AuthGuard } from '@nestjs/passport';
+import { NotificationService } from '../notification/notification.service';
+import { UsersService } from '../users/users.service';
+import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
+
 @Controller('aiface/template')
 export class TemplateController {
   constructor(
     private readonly templateService: TemplateService,
-    private readonly usersService: UserService,
-    private readonly resizeService: ResizeService,
+    private readonly usersService: UsersService,
     private readonly notificationService: NotificationService
   ) {}
 
-  @Roles('admin')
-  @UseGuards(JwtAuthenticationGuard, RolesGuard)
-  @Post('/')
-  async createTemplate(@Body() body: createTemplateDto, @Req() req: RequestWithUser, @Res() res: Response) {
-    const data = await this.templateService.createTemplate(body);
-    res.status(200).json({
-      success: true,
-      message: 'template successfully created',
-      data,
-    });
-  }
-  @Roles('admin')
-  @UseGuards(JwtAuthenticationGuard, RolesGuard)
-  @Patch('/categories/categoryname')
-  async updateTemplates(@Req() req: RequestWithUser, @Res() res: Response, @Body() body) {
-    const { prevName, newName } = body;
+  // @Roles('admin')
+  // @UseGuards(AuthGuard, RolesGuard)
+  // @Post('/')
+  // async createTemplate(@Body() body: createTemplateDto, @Req() req: RequestWithUser, @Res() res: Response) {
+  //   const data = await this.templateService.createTemplate(body);
+  //   res.status(200).json({
+  //     success: true,
+  //     message: 'template successfully created',
+  //     data,
+  //   });
+  // }
+  // @Roles('admin')
+  // @UseGuards(AuthGuard, RolesGuard)
+  // @Patch('/categories/categoryname')
+  // async updateTemplates(@Req() req: RequestWithUser, @Res() res: Response, @Body() body) {
+  //   const { prevName, newName } = body;
+  //
+  //   const data = await this.templateService.updateTemplates(prevName, newName);
+  //   res.status(200).json({
+  //     success: true,
+  //     data,
+  //   });
+  // }
+  //
+  // @Roles('admin')
+  // @UseGuards(AuthGuard, RolesGuard)
+  // @Post('/multi')
+  // @UseInterceptors(
+  //   FileInterceptor('file', {
+  //     storage: diskStorage({
+  //       destination: path.join(__dirname, '..', '..', 'aiface', 'templates', 'temp'),
+  //       filename: (req, file, cb) => {
+  //         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+  //         const ext = path.extname(file.originalname);
+  //
+  //         if (ext !== '.zip') {
+  //           cb(new BadRequestException('not valid file, expect zip file'), null);
+  //         }
+  //         cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
+  //       },
+  //     }),
+  //   })
+  // )
+  // async createMultiTemplates(@UploadedFile() file: Express.Multer.File, @Body() createMultiTemplatesDto: CreateMultiTemplatesDto) {
+  //   // console.log(file);
+  //   const destinationFolder = path.join(__dirname, '..', '..', 'aiface', 'templates');
+  //   const { templateIds, imageNames } = await this.templateService.createMultiTemplates(file.path, destinationFolder, createMultiTemplatesDto.category);
+  //   const res = await this.resizeService.bulkCoverCreator(imageNames);
+  //   console.log(res);
+  //   return {
+  //     message: 'File uploaded and processed successfully',
+  //     templateIds,
+  //     imageNames,
+  //   };
+  // }
 
-    const data = await this.templateService.updateTemplates(prevName, newName);
-    res.status(200).json({
-      success: true,
-      data,
-    });
-  }
+  // @UseGuards(AuthGuard, RolesGuard)
+  // @Roles('admin')
+  // @Post('/multi-without-image')
+  // async createMultiImageLessTemplates(@Body() body) {
+  //   const res = await this.templateService.createMultiImageLess(body.startTempId, body.endTempId, body.category);
+  //
+  //   return {
+  //     message: 'File uploaded and processed successfully',
+  //     res,
+  //   };
+  // }
+  //
+  // @Post('/with-images')
+  // @UseInterceptors(FilesInterceptor('images', 2, multerOptions))
+  // async createTemplateWithImages(@Body() body: createTemplateDto, @Req() req: RequestWithUser, @Res() res: Response, @UploadedFiles() images: Array<Express.Multer.File>) {
+  //   const data = await this.templateService.createTemplate(body);
+  //   res.status(200).json({
+  //     success: true,
+  //     message: 'template successfully created',
+  //     data,
+  //   });
+  // }
+  //
+  // @Get('/all')
+  // async getAllTemplate(@Req() req: RequestWithUser, @Res() res: Response) {
+  //   const data = await this.templateService.findAllTemplates();
+  //   console.log(data.length);
+  //   res.status(200).json({
+  //     success: true,
+  //     message: 'all templates',
+  //     data,
+  //   });
+  // }
+  //
+  // @Get('/categories')
+  // async getCategoriesTemplates(@Req() req: RequestWithUser, @Res() res: Response) {
+  //   const data = await this.templateService.getCategoriesTemplates();
+  //   res.status(200).json({
+  //     success: true,
+  //     message: 'templates grouped by category',
+  //     data,
+  //   });
+  // }
 
-  @Roles('admin')
-  @UseGuards(JwtAuthenticationGuard, RolesGuard)
-  @Post('/multi')
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage: diskStorage({
-        destination: path.join(__dirname, '..', '..', 'aiface', 'templates', 'temp'),
-        filename: (req, file, cb) => {
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-          const ext = path.extname(file.originalname);
+  // @Get('/user/all')
+  // @UseGuards(AuthGuard)
+  // async getAllUserTemplate(@Req() req: RequestWithUser, @Res() res: Response) {
+  //   const { user } = req;
+  //   const data = await this.templateService.findAllUserTemplates(user);
+  //   res.status(200).json({
+  //     success: true,
+  //     message: 'all user templates',
+  //     data,
+  //   });
+  // }
 
-          if (ext !== '.zip') {
-            cb(new BadRequestException('not valid file, expect zip file'), null);
-          }
-          cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
-        },
-      }),
-    })
-  )
-  async createMultiTemplates(@UploadedFile() file: Express.Multer.File, @Body() createMultiTemplatesDto: CreateMultiTemplatesDto) {
-    // console.log(file);
-    const destinationFolder = path.join(__dirname, '..', '..', 'aiface', 'templates');
-    const { templateIds, imageNames } = await this.templateService.createMultiTemplates(file.path, destinationFolder, createMultiTemplatesDto.category);
-    const res = await this.resizeService.bulkCoverCreator(imageNames);
-    console.log(res);
-    return {
-      message: 'File uploaded and processed successfully',
-      templateIds,
-      imageNames,
-    };
-  }
+  // @Get('/id/:tempId')
+  // async getTemplateByName(@Param('tempId') tempId: string, @Req() req: RequestWithUser, @Res() res: Response) {
+  //   const data = await this.templateService.findTemplateByName(tempId);
+  //   res.status(200).json({
+  //     success: true,
+  //     message: 'template data',
+  //     data,
+  //   });
+  // }
 
-  @UseGuards(JwtAuthenticationGuard, RolesGuard)
-  @Roles('admin')
-  @Post('/multi-without-image')
-  async createMultiImageLessTemplates(@Body() body) {
-    const res = await this.templateService.createMultiImageLess(body.startTempId, body.endTempId, body.category);
+  // @Roles('admin')
+  // @UseGuards(AuthGuard, RolesGuard)
+  // @Post('/report')
+  // async report(@Req() req: RequestWithUser, @Res() res: Response, @Body() body: { start; end }) {
+  //   const { totalImageSwaps, totalVideoSwaps } = await this.usersService.getTotals(new Date(body.start), new Date(body.end));
+  //   //
+  //   const data = await this.templateService.swapsReport(totalImageSwaps, totalVideoSwaps);
+  //   res.status(200).json({
+  //     success: true,
+  //     totalVideoSwaps: totalVideoSwaps.length,
+  //     totalImageSwaps: totalImageSwaps.length,
+  //     data,
+  //   });
+  // }
 
-    return {
-      message: 'File uploaded and processed successfully',
-      res,
-    };
-  }
+  // @Roles('admin')
+  // @UseGuards(AuthGuard, RolesGuard)
+  // @Post('/update-sort-order')
+  // async updateSortOrder(@Body() body: { categoryCounts }) {
+  //   if (!body || !body.categoryCounts) {
+  //     throw new BadRequestException('fuck off');
+  //   }
+  //   await this.templateService.updateSortOrder(body.categoryCounts);
+  // }
 
-  @Post('/with-images')
-  @UseInterceptors(FilesInterceptor('images', 2, multerOptions))
-  async createTemplateWithImages(@Body() body: createTemplateDto, @Req() req: RequestWithUser, @Res() res: Response, @UploadedFiles() images: Array<Express.Multer.File>) {
-    const data = await this.templateService.createTemplate(body);
-    res.status(200).json({
-      success: true,
-      message: 'template successfully created',
-      data,
-    });
-  }
+  // @Roles('admin')
+  // @UseGuards(AuthGuard, RolesGuard)
+  // @Post('/update-multi-templates')
+  // async updateMultiTemplates(@Body() body: { categoryCounts }) {
+  //   // await this.templateService.updateSortOrder(body.categoryCounts);
+  //
+  //   return this.templateService.updateMultiTemplatesV2();
+  // }
 
-  @Get('/all')
-  async getAllTemplate(@Req() req: RequestWithUser, @Res() res: Response) {
-    const data = await this.templateService.findAllTemplates();
-    console.log(data.length);
-    res.status(200).json({
-      success: true,
-      message: 'all templates',
-      data,
-    });
-  }
-
-  @Get('/categories')
-  async getCategoriesTemplates(@Req() req: RequestWithUser, @Res() res: Response) {
-    const data = await this.templateService.getCategoriesTemplates();
-    res.status(200).json({
-      success: true,
-      message: 'templates grouped by category',
-      data,
-    });
-  }
-
-  @Get('/user/all')
-  @UseGuards(JwtAuthenticationGuard)
-  async getAllUserTemplate(@Req() req: RequestWithUser, @Res() res: Response) {
-    const { user } = req;
-    const data = await this.templateService.findAllUserTemplates(user);
-    res.status(200).json({
-      success: true,
-      message: 'all user templates',
-      data,
-    });
-  }
-
-  @Get('/id/:tempId')
-  async getTemplateByName(@Param('tempId') tempId: string, @Req() req: RequestWithUser, @Res() res: Response) {
-    const data = await this.templateService.findTemplateByName(tempId);
-    res.status(200).json({
-      success: true,
-      message: 'template data',
-      data,
-    });
-  }
-
-  @Roles('admin')
-  @UseGuards(JwtAuthenticationGuard, RolesGuard)
-  @Post('/report')
-  async report(@Req() req: RequestWithUser, @Res() res: Response, @Body() body: { start; end }) {
-    const { totalImageSwaps, totalVideoSwaps } = await this.usersService.getTotals(new Date(body.start), new Date(body.end));
-    //
-    const data = await this.templateService.swapsReport(totalImageSwaps, totalVideoSwaps);
-    res.status(200).json({
-      success: true,
-      totalVideoSwaps: totalVideoSwaps.length,
-      totalImageSwaps: totalImageSwaps.length,
-      data,
-    });
-  }
-
-  @Roles('admin')
-  @UseGuards(JwtAuthenticationGuard, RolesGuard)
-  @Post('/update-sort-order')
-  async updateSortOrder(@Body() body: { categoryCounts }) {
-    if (!body || !body.categoryCounts) {
-      throw new BadRequestException('fuck off');
-    }
-    await this.templateService.updateSortOrder(body.categoryCounts);
-  }
-  @Roles('admin')
-  @UseGuards(JwtAuthenticationGuard, RolesGuard)
-  @Post('/update-multi-templates')
-  async updateMultiTemplates(@Body() body: { categoryCounts }) {
-    // await this.templateService.updateSortOrder(body.categoryCounts);
-
-    return this.templateService.updateMultiTemplatesV2();
-  }
-
-  @Roles('admin')
-  @UseGuards(JwtAuthenticationGuard, RolesGuard)
-  @Post('/templates-report')
-  async reportV2(@Req() req: RequestWithUser, @Res() res: Response, @Body() body: { start; end }) {
-    const data = await this.templateService.templateUsages(new Date(body.start), new Date(body.end));
-
-    //    const updatedSortOrders = await this.templateService.updateSortOrder(data);
-
-    res.status(200).json({
-      success: true,
-      data,
-    });
-  }
+  // @Roles('admin')
+  // @UseGuards(AuthGuard, RolesGuard)
+  // @Post('/templates-report')
+  // async reportV2(@Req() req: RequestWithUser, @Res() res: Response, @Body() body: { start; end }) {
+  //   const data = await this.templateService.templateUsages(new Date(body.start), new Date(body.end));
+  //
+  //   //    const updatedSortOrders = await this.templateService.updateSortOrder(data);
+  //
+  //   res.status(200).json({
+  //     success: true,
+  //     data,
+  //   });
+  // }
 
   // @Cron('30 10 * * *')
   // async cronUpdate() {

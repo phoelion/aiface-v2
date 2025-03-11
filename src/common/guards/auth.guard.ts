@@ -27,13 +27,13 @@ export class AuthGuard implements CanActivate {
         secret: process.env.JWT_SECRET,
       });
 
-      const user = await this.userService.findById(payload._id);
+      const user = await this.userService.getUser(payload._id);
 
       if (!user) {
-        throw new UnauthorizedException('The user belonging to this token does no longer exist.');
+        return false;
       }
-      payload.credits = user.credits;
       request['user'] = payload;
+      request['user.id'] = user._id;
     } catch (err: any) {
       throw new UnauthorizedException();
     }

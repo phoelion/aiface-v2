@@ -3,7 +3,6 @@ import { JwtService } from '@nestjs/jwt';
 import { randomBytes, randomInt } from 'crypto';
 import { UsersService } from 'src/users/users.service';
 import { User, UserDocument } from 'src/users/schema/user.schema';
-import { SignupDto } from './dtos';
 import { ConfigService } from '@nestjs/config';
 import * as moment from 'moment';
 import { NotificationService } from 'src/notification/notification.service';
@@ -18,12 +17,14 @@ export class AuthService {
     private configService: ConfigService,
     private notificationService: NotificationService
   ) {}
+
   private genCode(expirationMinutes: number) {
     return {
       code: randomInt(1000, 9999),
       expires: Date.now() + expirationMinutes * 60 * 1000,
     };
   }
+
   private generateToken(userId: string, expires: any, role?: string) {
     const payload = {
       _id: userId,
@@ -34,6 +35,7 @@ export class AuthService {
 
     return this.jwtService.signAsync(payload);
   }
+
   async generateAuthToken(user: Partial<UserDocument>) {
     const tokenExpires = moment().add(this.configService.get<string>('jwtExpTime'), 'days');
     const token = await this.generateToken(user.id, tokenExpires, user.role);
@@ -49,7 +51,6 @@ export class AuthService {
     if (!user) {
       const newUser = await this.userService.create({
         username,
-        purchasePageType: rand,
       });
 
       const token = await this.generateAuthToken(newUser);

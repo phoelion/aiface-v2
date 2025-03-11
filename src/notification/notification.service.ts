@@ -1,15 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import { TelegramService } from '../telegram/telegram.service';
 import { MessagesEnum } from './enums/messages.enum';
 import { OneSignalService } from './oneSignal.service';
 import { ConfigService } from '@nestjs/config';
+import { TelegramService } from '../telegram/telegram.service';
 
 @Injectable()
 export class NotificationService {
   constructor(
-    private readonly telegramService: TelegramService,
+
     private readonly oneSignalService: OneSignalService,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    private readonly telegramService: TelegramService,
   ) {}
 
   async sendNotification(message: string): Promise<number> {

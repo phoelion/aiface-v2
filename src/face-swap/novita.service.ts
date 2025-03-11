@@ -8,8 +8,12 @@ import { catchError, firstValueFrom } from 'rxjs';
 @Injectable()
 export class NovitaService {
   private apiKey: string;
-  constructor(private readonly configService: ConfigService, private readonly httpService: HttpService) // private readonly logger = new Logger(NovitaService.name)
-  {
+
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly httpService: HttpService
+  ) {
+    // private readonly logger = new Logger(NovitaService.name)
     this.apiKey = this.configService.get<string>('NOVITA_API_KEY');
   }
 
@@ -84,18 +88,18 @@ export class NovitaService {
         };
     }
   }
+
   async getResult(jobId: string) {
     const url = this.configService.get<string>('NOVITA_VIDEO_RESULT');
 
     const { data } = await firstValueFrom(
       this.httpService.get(`${url}${jobId}`, { headers: { Authorization: `Bearer ${this.apiKey}` } }).pipe(
         catchError((error: AxiosError) => {
-          console.log(error.response.data);
-          throw new InternalServerErrorException();
+          throw error.response.data;
         })
       )
     );
-    console.log(data);
+
     const finalResult = this.resultResponseHandler(data.task.status, data.videos[0]?.video_url);
     return finalResult;
   }

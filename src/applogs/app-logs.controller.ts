@@ -4,7 +4,8 @@ import { LogsService } from './app-logs.service';
 
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from 'src/common/guards/auth.guard';
-import RequestWithUser from 'src/common/interfaces/request-with-user';
+import { RequestWithUser } from '../common/interfaces/request-with-user';
+
 
 @Controller('logs')
 @ApiTags('logs')

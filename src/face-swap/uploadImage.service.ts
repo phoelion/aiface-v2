@@ -5,7 +5,7 @@ import { diskStorage } from 'multer';
 import { v4 as uuid } from 'uuid';
 
 export const multerConfig = {
-  dest: join(__dirname, '..', '..', 'aiface', 'faceswap'),
+  dest: join(__dirname, '..', '..', 'public'),
 };
 
 export const multerOptions = {

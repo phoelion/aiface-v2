@@ -6,10 +6,17 @@ import { User, UserSchema } from './schema/user.schema';
 
 import { HttpModule } from '@nestjs/axios';
 import { NotificationModule } from 'src/notification/notification.module';
+import { UserRequests, UserRequestsSchema } from './schema/user-requests.schema';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    MongooseModule.forFeature([
+      { name: User.name, schema: UserSchema },
+      {
+        name: UserRequests.name,
+        schema: UserRequestsSchema,
+      },
+    ]),
     HttpModule.register({
       timeout: 15000,
       maxRedirects: 5,

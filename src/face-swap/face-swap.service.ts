@@ -14,8 +14,10 @@ import { NovitaService } from './novita.service';
 import { MessagesEnum } from '../notification/enums/messages.enum';
 import { SwapTypesEnum } from '../users/enums/swap-types.enum';
 import { RequestStatusesEnum } from '../users/enums/request-statuses.enum';
-import { audioExtractor, compressImage, newFpsReducer } from '../shared/utils/ffmpeg';
+import { audioExtractor, compressImage, newFpsReducer, videoAudioMerger } from '../shared/utils/ffmpeg';
 import { FPS } from '../config/app-constants';
+import { IVideoResult } from './interfaces/video-result';
+import { downloadFile } from '../shared/utils/downloader';
 
 const { getVideoDurationInSeconds } = require('get-video-duration');
 
@@ -50,11 +52,11 @@ export class FaceSwapService {
     //TODO: handle messages
     let toBeSendMessage;
     if (status === RequestStatusesEnum.INIT) {
-      toBeSendMessage = '';
+      toBeSendMessage = MessagesEnum.NORMAL_SWAP.replace('{{id}}', userId);
     } else if (status === RequestStatusesEnum.SUCCESS) {
-      toBeSendMessage = '';
+      toBeSendMessage = MessagesEnum.SWAP_RESULT.replace('{{id}}', userId);
     } else if (status === RequestStatusesEnum.FAILED) {
-      toBeSendMessage = '';
+      toBeSendMessage = toBeSendMessage = MessagesEnum.FAILED_SWAP.replace('{{user}}', userId);
     }
 
     await this.notificationService.sendNotification(toBeSendMessage);
@@ -118,6 +120,16 @@ export class FaceSwapService {
     return toBeConsumedCredits;
   }
 
+  private prepareFinalResult(vidUrl: string, message: string, jobId: string) {
+    return {
+      success: true,
+      isLoading: false,
+      vidUrl,
+      message,
+      jobId,
+    };
+  }
+
   async photoSwap(sourceImage: Express.Multer.File, targetImage: Express.Multer.File, userId: string) {
     try {
       const user = await this.userService.getUser(userId);
@@ -157,42 +169,6 @@ export class FaceSwapService {
     }
   }
 
-  async getVideoResult(userId: string, jobId: string) {
-    const user = await this.userService.findById(userId);
-    if (!user.videoSwapIds.includes(jobId)) {
-      return false;
-    }
-    const res = await getVideoResult(jobId);
-    if (res && res.success && res.vidUrl !== null) {
-      const externalFileName = res.vidUrl.split('/').at(-1);
-      const dnPath = join(__dirname, '..', '..', 'aiface', 'faceswap', 'mastmoosir', externalFileName);
-      const fileExists = await this.checkFileExists(dnPath);
-
-      if (!fileExists) {
-        Logger.log(`[+] Downloading: ${res.vidUrl}`);
-        try {
-          await downloadFile(res.vidUrl, dnPath);
-        } catch (error) {
-          console.log(error);
-        }
-      }
-
-      const resPath = this.configService.get<string>('HTTPS_BASE_URL') + '/' + join('faceswap', 'mastmoosir', externalFileName);
-      const videoDuration = await this.videoCreditCalculator(dnPath);
-      const little = videoDuration % 10 > 0 ? 10 : 0;
-      const toBeConsumedCredits = Math.floor(videoDuration / 10) * 10 + little;
-      await this.userService.addResultVideoUrl(jobId, { resultVideo: resPath });
-      await this.notificationService.messenger(Messages.successfulVideoSwap(`${user._id}`, user.videoSwapIds.length, toBeConsumedCredits));
-
-      res.vidUrl = resPath;
-    }
-    if (!res || !res.success) {
-      await this.notificationService.messenger(Messages.failedVideoSwap(`${user._id}`, user.try));
-    }
-
-    return res;
-  }
-
   public async creditsCalculator(videoPath: string) {
     const duration = await getVideoDurationInSeconds(videoPath);
 
@@ -200,9 +176,6 @@ export class FaceSwapService {
   }
 
   async videoSwapV2(userId: string, imageFile: Express.Multer.File, videoFile: Express.Multer.File) {
-    const imageUrl = `${this.configService.get<string>('baseUrl')}/${imageFile.filename}`;
-    const videoUrl = `${this.configService.get<string>('baseUrl')}/${videoFile.filename}`;
-
     let result;
     result = await this.normalVideoSwap(imageFile, videoFile);
 
@@ -239,35 +212,39 @@ export class FaceSwapService {
   }
 
   async getVideoResultV2(userId: string, jobId: string) {
-    try {
-      const user = await this.userService.getUser(userId);
-      const prevResult = await this.userRequestModel.findOne({ jobId, user: userId }).populate('templateId');
-      const videoName = user.videoSwaps.filter((el) => el.jobId === jobId);
-      const res = await this.getResult(jobId, videoName[0].videoName);
+    let finalResult;
+    const user = await this.userService.getUser(userId);
+    const prevResult = await this.userService.getVideoResult(userId, jobId);
+
+    if (!prevResult) throw new BadRequestException('user id or jobId is not valid');
+
+    if (prevResult.result?.length > 0) {
+      finalResult = this.prepareFinalResult(prevResult.result, 'Video is ready', prevResult.jobId);
+    } else {
+      const videoName = prevResult.secondFile.split('.')[0];
+      const res = await this.prepareApiResult(jobId, videoName);
+
       if (!res.isLoading && res.success) {
-        const tmp = await this.userService.updateVideoStatus(userId, videoName[0].videoName);
-        await this.userService.createUserRequest('video', userId, jobId, '', res.vidUrl, 'success');
-        await this.notificationService.messenger(MessagesEnum.Swap_Result.replace('{{id}}', userId));
+        await this.userService.updateVideoStatus(userId, jobId, res.vidUrl, RequestStatusesEnum.SUCCESS);
+        await this.notificationService.sendNotification(MessagesEnum.RESULT.replace('{{id}}', userId));
       }
       if (res.success === false && res.vidUrl === null) {
-        await this.notificationService.messenger(MessagesEnum.Swap_Result_Error.replace('{{id}}', userId));
-        await this.userService.createUserRequest('video', userId, jobId, JSON.stringify(res), res.vidUrl, 'failed');
+        await this.userService.updateVideoStatus(userId, jobId, res.vidUrl, RequestStatusesEnum.FAILED);
+        await this.notificationService.sendNotification(MessagesEnum.FAILED_SWAP.replace('{{user}}', userId).replace('{{reason}}', res.error.reason));
       }
-      return { ...res, videoName: videoName[0].videoName };
-    } catch (error) {
-      console.log(error);
-      // throw new BadRequestException();
+      finalResult = res;
     }
+    delete finalResult['error'];
+    return finalResult;
   }
 
-  async getResult(jobId: string, videoName: string): Promise<IVideoResult> {
+  async prepareApiResult(jobId: string, videoName: string, error?): Promise<IVideoResult> {
     try {
       const result = await this.novitaService.getResult(jobId);
 
-      // // step 1 : prepare raw video
       const resultName = 'result_' + videoName + '.mp4';
       if (result?.vidUrl !== null) {
-        const dnPath = join(__dirname, '..', '..', 'aiface', 'faceswap', resultName);
+        const dnPath = join(__dirname, '..', '..', 'public', resultName);
         const fileExists = await this.checkFileExists(dnPath);
 
         if (!fileExists) {
@@ -282,24 +259,29 @@ export class FaceSwapService {
         const finalName = 'final_' + resultName;
         let rawFilePath, audioPath;
 
-        rawFilePath = join(__dirname, '..', '..', 'aiface', 'faceswap', resultName);
-        audioPath = join(__dirname, '..', '..', 'aiface', 'faceswap', videoName + '.mp3');
+        rawFilePath = join(__dirname, '..', '..', 'public', resultName);
+        audioPath = join(__dirname, '..', '..', 'public', videoName + '.mp3');
 
-        const outputPath = join(__dirname, '..', '..', 'aiface', 'faceswap', finalName);
+        const outputPath = join(__dirname, '..', '..', 'public', finalName);
 
         // step 2 : add audio to it
         const finalNameExists = await this.checkFileExists(outputPath);
-        let finalResult;
+
         if (!finalNameExists) {
-          finalResult = await videoAudioMerger(rawFilePath, audioPath, outputPath);
+          await videoAudioMerger(rawFilePath, audioPath, outputPath);
         }
-        const resPath = this.configService.get<string>('HTTPS_BASE_URL') + '/' + join('faceswap', finalName);
-        result.vidUrl = resPath;
+        result.vidUrl = this.configService.get<string>('baseUrl') + '/' + join('public', finalName);
       }
+
       return result;
     } catch (error) {
-      console.log(error);
-      return { success: false, vidUrl: null, message: 'There is something wrong with the server', isLoading: false };
+      return {
+        success: false,
+        vidUrl: null,
+        error: error,
+        message: 'There is something wrong with the server',
+        isLoading: false,
+      };
     }
   }
 }

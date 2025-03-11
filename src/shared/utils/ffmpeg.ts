@@ -137,3 +137,18 @@ export function newFpsReducer(inputFile: string, fps: number, output: string): P
     });
   });
 }
+
+export function videoAudioMerger(rawFile: string, audioFile: string, output: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const newComm = `ffmpeg -i ${rawFile} -i ${audioFile} -c:v copy -c:a aac -b:a 128k -shortest ${output}`;
+
+    exec(newComm, (error, stdout, stderr) => {
+      if (error) {
+        reject(`Error processing video: ${error.message}`);
+        return;
+      }
+
+      resolve(`${output}`);
+    });
+  });
+}
