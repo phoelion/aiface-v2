@@ -14,7 +14,7 @@ export class UsersService {
     @InjectModel(User.name) private userModel: Model<User>,
     @InjectModel(UserRequests.name) private userRequestsModel: Model<UserRequests>,
     private readonly configService: ConfigService,
-    private readonly  notificationService: NotificationService
+    private readonly notificationService: NotificationService
   ) {}
 
   async create(data: Partial<User>) {
@@ -26,9 +26,8 @@ export class UsersService {
   }
 
   async findOne(params) {
-    return this.userModel.findOne({ params });
+    return this.userModel.findOne(params);
   }
-
 
   async findById(id: string, select?: string) {
     return this.userModel.findById(id).select(select);

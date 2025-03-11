@@ -4,18 +4,22 @@ import { InternalServerErrorException } from '@nestjs/common';
 import * as ffmpeg from 'fluent-ffmpeg';
 import { exec } from 'child_process';
 
-export function compressImage(inputPath, outputPath, fileName) {
-  const resizeDim = 1080;
-  return sharp(inputPath)
-    .resize(resizeDim)
-    .jpeg({ quality: 100 })
-    .toFile(join(outputPath, `${fileName}-resized-${resizeDim}.jpeg`))
-    .then(() => {
-      return `${fileName}-resized-${resizeDim}.jpeg`;
-    })
-    .catch((err) => {
-      throw new InternalServerErrorException();
-    });
+export async function compressImage(inputPath: string, outputPath: string, fileName: string, resizeDim = 720) {
+  try {
+    const metadata = await sharp(inputPath).metadata();
+    const rawFileName = fileName.split('.')[0];
+    if (metadata.width! > resizeDim || metadata.height! > resizeDim) {
+      const outputFilePath = join(outputPath, `${rawFileName}-resized-${resizeDim}.jpeg`);
+
+      await sharp(inputPath).rotate().resize(resizeDim).jpeg({ quality: 90 }).toFile(outputFilePath);
+
+      return `${rawFileName}-resized-${resizeDim}.jpeg`;
+    }
+
+    return fileName;
+  } catch (err) {
+    throw new InternalServerErrorException();
+  }
 }
 
 export async function addTopSpace(inputPath, outputPath, topColor = { r: 0, g: 0, b: 0, alpha: 0 }) {

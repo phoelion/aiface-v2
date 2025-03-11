@@ -1,6 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Categories } from './category.enum';
+import { TemplateTypeEnum } from '../enums/template-type.enum';
+import { Category } from './category.schema';
+import * as process from 'node:process';
+import { PHOTO_TEMPLATES_BASE_URL } from '../../config/app-constants';
 
 export type TemplateDocument = mongoose.HydratedDocument<Template>;
 
@@ -13,14 +17,11 @@ export class Template {
   @Prop({ required: true, type: String })
   thumbnail: string;
 
-  @Prop({ required: true, type: String })
-  cover: string;
+  @Prop({ type: String })
+  file: string;
 
-  @Prop({ required: true, type: String, unique: true })
-  tempId: string;
-
-  @Prop({ default: false, type: Boolean })
-  isLiked: boolean;
+  @Prop({ type: String })
+  fileLowRes: string;
 
   @Prop({ default: false, type: Boolean, select: false })
   isActive: boolean;
@@ -28,17 +29,14 @@ export class Template {
   @Prop({ default: false, type: Boolean })
   isFree: boolean;
 
-  @Prop({ default: false, type: Boolean })
-  isEventTemplate: boolean;
-
-  @Prop({ default: 0, type: Number })
-  try: number;
-
-  @Prop({ type: Number })
+  @Prop({ type: Number, default: 0 })
   sortOrder: number;
 
-  @Prop({ type: String, enum: Categories })
-  category: Categories;
+  @Prop({ type: mongoose.SchemaTypes.ObjectId, ref: 'Category', required: true })
+  categoryId: Category;
+
+  @Prop({ type: String, enum: TemplateTypeEnum })
+  type: TemplateTypeEnum;
 }
 
 export const TemplateSchema = SchemaFactory.createForClass(Template);
@@ -46,32 +44,9 @@ export const TemplateSchema = SchemaFactory.createForClass(Template);
 TemplateSchema.set('toJSON', {
   transform: function (doc, ret, opt) {
     ret.id = ret._id;
+    ret.thumbnailUrl = PHOTO_TEMPLATES_BASE_URL + ret.thumbnail;
     delete ret['__v'];
     delete ret['_id'];
-    delete ret['try'];
-    delete ret['thumbnail'];
-    delete ret['isEventTemplate'];
-    ret.cover = `${process.env.BASE_URL}/templates/${ret.cover}`;
-    return ret;
-  },
-});
-
-TemplateSchema.set('toObject', {
-  transform: function (doc, ret, opt) {
-    ret.id = ret._id;
-    delete ret['__v'];
-    delete ret['_id'];
-    delete ret['try'];
-    delete ret['thumbnail'];
-    delete ret['isEventTemplate'];
-    ret.cover = `${process.env.BASE_URL}/templates/${ret.cover}`;
-    return ret;
-  },
-});
-
-TemplateSchema.set('toObject', {
-  transform: function (doc, ret, opt) {
-    ret.id = ret._id.toString();
     return ret;
   },
 });
