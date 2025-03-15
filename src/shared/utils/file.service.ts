@@ -191,3 +191,18 @@ export async function createLowResTemplate(inputPath: string, outputPath: string
     });
   });
 }
+
+function getImageExtension(imagePath: string): string {
+  const ext = imagePath.split('.').pop()?.toLowerCase();
+  return ext === 'jpg' ? 'jpeg' : ext || 'png';
+}
+
+export function imageToBase64(imagePath: string): string {
+  try {
+    const fileData = fs.readFileSync(imagePath);
+    return `data:image/${getImageExtension(imagePath)};base64,${fileData.toString('base64')}`;
+  } catch (error) {
+    console.error('Error converting image to Base64:', error);
+    throw error;
+  }
+}

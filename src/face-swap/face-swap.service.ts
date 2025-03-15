@@ -14,10 +14,11 @@ import { NovitaService } from './novita.service';
 import { MessagesEnum } from '../notification/enums/messages.enum';
 import { SwapTypesEnum } from '../users/enums/swap-types.enum';
 import { RequestStatusesEnum } from '../users/enums/request-statuses.enum';
-import { audioExtractor, compressImage, newFpsReducer, videoAudioMerger } from '../shared/utils/ffmpeg';
-import { FPS } from '../config/app-constants';
+import { audioExtractor, compressImage, imageToBase64, newFpsReducer, videoAudioMerger } from '../shared/utils/file.service';
+import { FPS, PHOTO_TEMPLATES_BASE_PATH } from '../config/app-constants';
 import { IVideoResult } from './interfaces/video-result';
 import { downloadFile } from '../shared/utils/downloader';
+import { TemplateTypeEnum } from '../template/enums/template-type.enum';
 
 const { getVideoDurationInSeconds } = require('get-video-duration');
 
@@ -31,12 +32,12 @@ export class FaceSwapService {
     private readonly novitaService: NovitaService
   ) {}
 
-  private async photoSwapLogAndNotificationHandler(userId: string, firstImageName: string, secondImageName: string, status: RequestStatusesEnum, result: string, message?: string) {
+  private async photoSwapLogAndNotificationHandler(userId: string, firstImageName: string, secondImageName: string, templateId = null, status: RequestStatusesEnum, result: string, message?: string) {
     const toBeSendMessage =
       status === RequestStatusesEnum.SUCCESS ? MessagesEnum.SUCCESS_SWAP.replace('{{user}}', userId) : MessagesEnum.FAILED_SWAP.replace('{{user}}', userId).replace('{{reason}}', message);
 
     await this.notificationService.sendNotification(toBeSendMessage);
-    await this.userService.createHistory(userId, null, null, firstImageName, secondImageName, result, SwapTypesEnum.IMAGE, status);
+    await this.userService.createHistory(userId, null, templateId, firstImageName, secondImageName, result, SwapTypesEnum.IMAGE, status);
   }
 
   private async videoSwapLogAndNotificationHandler(
@@ -130,6 +131,71 @@ export class FaceSwapService {
     };
   }
 
+  base64ToImage(base64String: string, outputPath: string): void {
+    try {
+      // Extract base64 data (remove metadata like 'data:image/png;base64,')
+      const base64Data = base64String.replace(/^data:image\/\w+;base64,/, '');
+
+      // Convert base64 to buffer
+      const imageBuffer = Buffer.from(base64Data, 'base64');
+
+      // Write the buffer to a file
+      fs.writeFileSync(outputPath, imageBuffer);
+
+      console.log(`Image saved at ${outputPath}`);
+    } catch (error) {
+      console.error('Error converting Base64 to image:', error);
+      throw error;
+    }
+  }
+
+  async templatePhotoSwap(sourceImage: Express.Multer.File, templateId: string, userId: string) {
+    try {
+      const user = await this.userService.getUser(userId);
+
+      if (!user) throw new NotFoundException('user not found');
+
+      const template = await this.templateService.findTemplateById(templateId);
+
+      if (!template || template.type !== TemplateTypeEnum.IMAGE) {
+        throw new BadRequestException('Template is not valid');
+      }
+
+      const { data } = await axios.post(
+        this.configService.get<string>('TEMPLATE_FACESWAP_URL'),
+        {
+          source_image: this.imageToBase64(sourceImage.path),
+          target_image: this.imageToBase64(PHOTO_TEMPLATES_BASE_PATH + '/' + template.file),
+          watermark: false,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      if (data.success === 'false') {
+        await this.photoSwapLogAndNotificationHandler(userId, sourceImage.filename, template.file, template.id, RequestStatusesEnum.FAILED, null, data.message);
+        throw new BadRequestException(data.message ? data.message : '');
+      } else {
+        const resultName = crypto.randomUUID() + '.png';
+        this.base64ToImage(data.result, sourceImage.path + '/' + resultName);
+        await this.photoSwapLogAndNotificationHandler(userId, sourceImage.filename, template.file, template.id, RequestStatusesEnum.SUCCESS, resultName);
+        return data.result;
+      }
+    } catch (error) {
+      if (error.code === 'ECONNREFUSED') {
+        await this.photoSwapLogAndNotificationHandler(userId, sourceImage.filename, null, templateId, RequestStatusesEnum.FAILED, null, 'ECONNREFUSED');
+        throw new InternalServerErrorException();
+      }
+      if (error.name === 'AxiosError') {
+        await this.photoSwapLogAndNotificationHandler(userId, sourceImage.filename, null, templateId, RequestStatusesEnum.FAILED, null, 'AxiosError');
+        throw new BadRequestException();
+      }
+      throw new BadRequestException(error);
+    }
+  }
+
   async photoSwap(sourceImage: Express.Multer.File, targetImage: Express.Multer.File, userId: string) {
     try {
       const user = await this.userService.getUser(userId);
@@ -139,9 +205,9 @@ export class FaceSwapService {
       const { data } = await axios.post(
         this.configService.get<string>('FACESWAP_URL'),
         {
-          image_1: sourceImage.filename,
-          image_2: targetImage.filename,
-          watermark: 'false',
+          image_1: this.imageToBase64(sourceImage.path),
+          image_2: this.imageToBase64(targetImage.path),
+          watermark: false,
         },
         {
           headers: {
@@ -150,10 +216,12 @@ export class FaceSwapService {
         }
       );
       if (data.success === 'false') {
-        await this.photoSwapLogAndNotificationHandler(userId, sourceImage.filename, targetImage.filename, RequestStatusesEnum.FAILED, null, data.message);
+        await this.photoSwapLogAndNotificationHandler(userId, sourceImage.filename, targetImage.filename, null, RequestStatusesEnum.FAILED, null, data.message);
         throw new BadRequestException(data.message ? data.message : '');
       } else {
-        await this.photoSwapLogAndNotificationHandler(userId, sourceImage.filename, targetImage.filename, data.result, RequestStatusesEnum.SUCCESS);
+        const resultName = crypto.randomUUID() + '.png';
+        this.base64ToImage(data.result, sourceImage.path + '/' + resultName);
+        await this.photoSwapLogAndNotificationHandler(userId, sourceImage.filename, targetImage.filename, null, RequestStatusesEnum.SUCCESS, resultName);
         return data.result;
       }
     } catch (error) {

@@ -1,6 +1,6 @@
-import { Controller, Post, ClassSerializerInterceptor, UseInterceptors, UploadedFiles, BadRequestException, Req, UseGuards, Param, Get } from '@nestjs/common';
+import { Controller, Post, ClassSerializerInterceptor, UseInterceptors, UploadedFiles, BadRequestException, Req, UseGuards, Param, Get, UploadedFile, Body } from '@nestjs/common';
 import { FaceSwapService } from './face-swap.service';
-import { FileFieldsInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { FileFieldsInterceptor, FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { videoOptions } from './uploadImage.service';
 import { ConfigService } from '@nestjs/config';
 import { MULTER_OPTIONS_PUBLIC } from '../config/app-constants';
@@ -21,11 +21,24 @@ export class FaceSwapController {
   @UseGuards(AuthGuard, DevGuard)
   @UseInterceptors(FilesInterceptor('images', 2, MULTER_OPTIONS_PUBLIC))
   async swapPhotos(@Req() req: RequestWithUser, @UploadedFiles() images: Array<Express.Multer.File>) {
-    const { user } = req;
-
     if (!images || images.length !== 2) throw new BadRequestException('you must upload images');
 
-    const swapResult = await this.faceSwapService.photoSwap(images[0], images[1], user._id);
+    const swapResult = await this.faceSwapService.photoSwap(images[0], images[1], req.user._id);
+    const finalUrl = `${this.configService.get<string>('baseUrl')}/${swapResult}`;
+    return {
+      success: true,
+      message: 'photos swapped successfully',
+      result: finalUrl,
+    };
+  }
+
+  @Post('/template-photo-swap')
+  @UseGuards(AuthGuard, DevGuard)
+  @UseInterceptors(FileInterceptor('image', MULTER_OPTIONS_PUBLIC))
+  async swapWithTemplatePhotos(@Req() req: RequestWithUser, @UploadedFile() image: Express.Multer.File, @Body('templateId') templateId: string) {
+    if (!image) throw new BadRequestException('you must upload images');
+
+    const swapResult = await this.faceSwapService.templatePhotoSwap(image, templateId, req.user._id);
     const finalUrl = `${this.configService.get<string>('baseUrl')}/${swapResult}`;
     return {
       success: true,

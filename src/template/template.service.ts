@@ -6,7 +6,7 @@ import { Categories } from './model/category.enum';
 
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
-import { compressImage, createLowResTemplate, takeFirstFrameScreenshot } from '../shared/utils/ffmpeg';
+import { compressImage, createLowResTemplate, takeFirstFrameScreenshot } from '../shared/utils/file.service';
 import { Category } from './model/category.schema';
 import { CreateTemplateDto } from './dtos/create-template.dto';
 import { TemplateTypeEnum } from './enums/template-type.enum';
