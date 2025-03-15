@@ -215,6 +215,7 @@ export class FaceSwapService {
           },
         }
       );
+      console.log(data);
       if (data.success === 'false') {
         await this.photoSwapLogAndNotificationHandler(userId, sourceImage.filename, targetImage.filename, null, RequestStatusesEnum.FAILED, null, data.message);
         throw new BadRequestException(data.message ? data.message : '');
