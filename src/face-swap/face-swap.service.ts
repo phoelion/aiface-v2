@@ -162,7 +162,7 @@ export class FaceSwapService {
       }
 
       const { data } = await axios.post(
-        this.configService.get<string>('TEMPLATE_FACESWAP_URL'),
+        this.configService.get<string>('FACESWAP_URL'),
         {
           source_image: this.imageToBase64(sourceImage.path),
           target_image: this.imageToBase64(PHOTO_TEMPLATES_BASE_PATH + '/' + template.file),
