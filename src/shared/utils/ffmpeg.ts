@@ -3,6 +3,7 @@ import * as sharp from 'sharp';
 import { InternalServerErrorException } from '@nestjs/common';
 import * as ffmpeg from 'fluent-ffmpeg';
 import { exec } from 'child_process';
+import * as fs from 'node:fs';
 
 export async function compressImage(inputPath: string, outputPath: string, fileName: string, resizeDim = 720) {
   try {
@@ -22,7 +23,7 @@ export async function compressImage(inputPath: string, outputPath: string, fileN
   }
 }
 
-export async function addTopSpace(inputPath, outputPath, topColor = { r: 0, g: 0, b: 0, alpha: 0 }) {
+export async function addTopSpace(inputPath: string, outputPath: string, topColor = { r: 0, g: 0, b: 0, alpha: 0 }) {
   try {
     // Get original image metadata
     const metadata = await sharp(inputPath).metadata();
@@ -153,6 +154,40 @@ export function videoAudioMerger(rawFile: string, audioFile: string, output: str
       }
 
       resolve(`${output}`);
+    });
+  });
+}
+
+export async function takeFirstFrameScreenshot(videoPath: string, outputPath: string, fileName: string) {
+  return new Promise((resolve, reject) => {
+    ffmpeg(videoPath)
+      .screenshots({
+        timestamps: [0],
+        filename: fileName,
+        folder: outputPath,
+      })
+      .on('end', () => {
+        console.log(`Screenshot saved at ${outputPath}/${fileName}`);
+        resolve(fileName);
+      })
+      .on('error', (err) => {
+        console.error(`Error taking first frame screenshot:`, err.message);
+        reject(err);
+      });
+  });
+}
+
+export async function createLowResTemplate(inputPath: string, outputPath: string, filename: string) {
+  return new Promise((resolve, reject) => {
+    const command = `ffmpeg -i ${inputPath} -vf "scale=360:-1" -t 1  -vsync cfr -vcodec libwebp -lossless 0 -q:v 75 -preset default -loop 0 -an ${outputPath}/${filename}`;
+
+    exec(command, (error, stdout, stderr) => {
+      if (error) {
+        reject(`Error processing video: ${error.message}`);
+        return;
+      }
+
+      resolve(`${filename}`);
     });
   });
 }

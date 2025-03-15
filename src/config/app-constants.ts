@@ -11,11 +11,11 @@ export const multerConfig = {
   dest: join(__dirname, '..', '..', 'public'),
   home: join(__dirname, '..', '..', 'public', 'home'),
   imageTemplates: join(__dirname, '..', '..', 'public', 'templates', 'photo'),
-  videoTemplates: join(__dirname, '..', '..', 'public', 'templates', 'photo'),
+  videoTemplates: join(__dirname, '..', '..', 'public', 'templates', 'video'),
 };
 export const MULTER_OPTIONS_PUBLIC = {
   limits: {
-    fileSize: 100000000,
+    fileSize: 100_000_000,
   },
   fileFilter: (req: any, file: any, cb: any) => {
     const arr = file.originalname.split('.');
@@ -125,3 +125,6 @@ export const SERVE_ROOT_URL = '/public/';
 export const FPS = 20;
 
 export const PHOTO_TEMPLATES_BASE_URL = process.env[`BASE_URL_${process.env.NODE_ENV}`] + '/public' + '/templates' + '/photo' + '/';
+export const VIDEO_TEMPLATES_BASE_URL = process.env[`BASE_URL_${process.env.NODE_ENV}`] + '/public' + '/templates' + '/video' + '/';
+
+export const VIDEO_TEMPLATES_POSTFIX = '-low-res-webp.webp';

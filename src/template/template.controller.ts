@@ -1,4 +1,4 @@
-import { Controller, Post, Req, Get, Res, Param, Body, UseInterceptors, UploadedFiles, UseGuards, Patch, UploadedFile, BadRequestException, Logger } from '@nestjs/common';
+import { Controller, Post, Req, Get, Res, Query,Param, Body, UseInterceptors, UploadedFiles, UseGuards, Patch, UploadedFile, BadRequestException, Logger } from '@nestjs/common';
 import { Response } from 'express';
 
 import { TemplateService } from './template.service';
@@ -13,6 +13,8 @@ import { AuthGuard } from '../common/guards/auth.guard';
 import { RequestWithUser } from '../common/interfaces/request-with-user';
 import { MULTER_OPTIONS_IMAGE_TEMPLATE, MULTER_OPTIONS_PUBLIC, MULTER_OPTIONS_VIDEO_TEMPLATE } from '../config/app-constants';
 import { CreateCategoryDto } from './dtos/create-category.dto';
+import { CategoryTypeEnum } from './enums/category-type.enum';
+
 
 @Controller('templates')
 export class TemplateController {
@@ -48,7 +50,7 @@ export class TemplateController {
       throw new BadRequestException('Video is required');
     }
     //TODO: add logic of creating video templates
-    const data = await this.templateService.createPhotoTemplate(body, video);
+    const data = await this.templateService.createVideoTemplate(body, video);
     return {
       success: true,
       message: 'template successfully created',
@@ -68,6 +70,20 @@ export class TemplateController {
       data,
     };
   }
+
+  @Roles('admin')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Get('/categories')
+  async getCategories(@Req() req: RequestWithUser, @Query('type') type: string) {
+    const data = await this.templateService.getAllCategories(type as CategoryTypeEnum);
+
+    return {
+      success: true,
+      message: 'template successfully created',
+      data,
+    };
+  }
+
 
   // @Roles('admin')
   // @UseGuards(AuthGuard, RolesGuard)

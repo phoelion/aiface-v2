@@ -6,11 +6,14 @@ import { Categories } from './model/category.enum';
 
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
-import { compressImage } from '../shared/utils/ffmpeg';
+import { compressImage, createLowResTemplate, takeFirstFrameScreenshot } from '../shared/utils/ffmpeg';
 import { Category } from './model/category.schema';
 import { CreateTemplateDto } from './dtos/create-template.dto';
 import { TemplateTypeEnum } from './enums/template-type.enum';
 import { CreateCategoryDto } from './dtos/create-category.dto';
+import * as crypto from 'node:crypto';
+import { VIDEO_TEMPLATES_POSTFIX } from '../config/app-constants';
+import { CategoryTypeEnum } from './enums/category-type.enum';
 
 @Injectable()
 export class TemplateService {
@@ -23,7 +26,7 @@ export class TemplateService {
 
   async createPhotoTemplate(data: CreateTemplateDto, image: Express.Multer.File) {
     const category = await this.categoryModel.findById(data.categoryId);
-    if (!category) {
+    if (!category || category.type !== CategoryTypeEnum.IMAGE) {
       throw new BadRequestException('Category not found');
     }
     const resizeDim = 340;
@@ -40,30 +43,37 @@ export class TemplateService {
     });
   }
 
-  // async createVideoTemplate(data: CreateTemplateDto, video: Express.Multer.File) {
-  //   const category = await this.categoryModel.findById(data.categoryId);
-  //   if (!category) {
-  //     throw new BadRequestException('Category not found');
-  //   }
-  //   const resizeDim = 340;
-  //   const resizedImage = await compressImage(image.path, image.destination, image.filename, resizeDim);
-  //
-  //   return this.templateModel.create({
-  //     thumbnail: resizedImage,
-  //     categoryId: data.categoryId,
-  //     isActive: data.isActive,
-  //     isFree: data.isFree,
-  //     file: image.filename,
-  //     sortOrder: data.sortOrder,
-  //     type: TemplateTypeEnum.IMAGE,
-  //   });
-  // }
+  async createVideoTemplate(data: CreateTemplateDto, video: Express.Multer.File) {
+    const category = await this.categoryModel.findById(data.categoryId);
+    if (!category || category.type !== CategoryTypeEnum.VIDEO) {
+      throw new BadRequestException('Category not found');
+    }
+    const resizeDim = 340;
+    const screenShotName = crypto.randomUUID() + '.jpeg';
+    const screenShot = await takeFirstFrameScreenshot(video.path, video.destination, screenShotName);
+    console.log(screenShot);
+    const resizedImage = await compressImage(video.destination + '/' + screenShot, video.destination, screenShotName, resizeDim);
+
+    const lowResWebpName = video.filename.split('.')[0] + VIDEO_TEMPLATES_POSTFIX;
+
+    await createLowResTemplate(video.path, video.destination, lowResWebpName);
+    return this.templateModel.create({
+      thumbnail: resizedImage,
+      categoryId: data.categoryId,
+      isActive: data.isActive,
+      isFree: data.isFree,
+      file: video.filename,
+      sortOrder: data.sortOrder,
+      type: TemplateTypeEnum.VIDEO,
+    });
+  }
 
   public async createCategory(data: CreateCategoryDto) {
     return await this.categoryModel.create({
       isActive: data.isActive,
       name: data.name,
       sortOrder: data.sortOrder,
+      type: data.type,
     });
   }
 
@@ -123,6 +133,13 @@ export class TemplateService {
 
   async findTemplateById(tempId: string) {
     return this.templateModel.findOne({ tempId });
+  }
+
+  async getAllCategories(type: CategoryTypeEnum) {
+    return this.categoryModel.find({
+      isActive: true,
+      type,
+    });
   }
 
   // async getCategoriesTemplates() {

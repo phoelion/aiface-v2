@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, ObjectId } from 'mongoose';
+import { CategoryTypeEnum } from '../enums/category-type.enum';
 
 export type CategoryDocument = HydratedDocument<Category>;
 
@@ -10,6 +11,9 @@ export class Category {
 
   @Prop({ default: true })
   isActive: boolean;
+
+  @Prop({ type: String, enum: CategoryTypeEnum })
+  type: CategoryTypeEnum;
 
   @Prop({ default: 0 })
   sortOrder: number;

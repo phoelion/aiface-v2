@@ -7,4 +7,6 @@ export class CreateCategoryDto {
   isActive: boolean;
   @IsNotEmpty()
   sortOrder: number;
+  @IsNotEmpty()
+  type: string;
 }
