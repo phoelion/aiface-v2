@@ -103,13 +103,14 @@ async def read_root(images: Images):
         height_increaser(att_image)
         result = run_application(config)
         if result == True:
+            out_name = uuid.uuid4()
             img_path = (os.path.abspath(os.path.join(os.getcwd(), '..', "public", "img")))
-            height_decrease(img_path + "/swap_{}".format(uuid.uuid4()))
+            height_decrease(img_path + "/swap_{}".format(out_name))
 
             if images.watermark == "false":
                 return {
                     "success": "true",
-                    "result": "img/swap_{}".format(images.image_1)
+                    "result": "img/swap_{}".format(out_name)
                 }
             else:
                 result_2 = watermark_adder("swap_{}".format(images.image_1), save_path)
