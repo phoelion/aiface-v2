@@ -206,8 +206,8 @@ export class FaceSwapService {
       const { data } = await axios.post(
         this.configService.get<string>('FACESWAP_URL'),
         {
-          source_image: sourceImage.path,
-          target_image: targetImage.path,
+          image_1: sourceImage.path,
+          image_2: targetImage.path,
           watermark: false,
         },
         {
