@@ -81,4 +81,15 @@ export class TemplateController {
       data,
     };
   }
+
+  @UseGuards(AuthGuard)
+  @Get('/categories/:id/templates')
+  async getCategoryTemplates(@Req() req: RequestWithUser, @Param('id') id: string) {
+    const data = await this.templateService.getCategoryTemplates(id);
+
+    return {
+      success: true,
+      data,
+    };
+  }
 }
