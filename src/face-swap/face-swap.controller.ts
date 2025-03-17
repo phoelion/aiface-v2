@@ -54,12 +54,11 @@ export class FaceSwapController {
     if (!image) throw new BadRequestException('you must upload an image');
 
     const swapResult = await this.faceSwapService.templateVideoSwap(req.user._id, image, templateId);
-    const finalUrl = `${PUBLIC_BASE_URL}/${swapResult}`;
-    return {
-      success: true,
-      message: 'photos swapped successfully',
-      result: finalUrl,
-    };
+
+    if (!swapResult) {
+      return { success: false, jobId: null };
+    }
+    return { success: true, jobId: swapResult.jobId };
   }
 
   @UseGuards(AuthGuard, DevGuard)
