@@ -131,8 +131,8 @@ export class TemplateService {
     return this.templateModel.find({ tempId });
   }
 
-  async findTemplateById(tempId: string) {
-    return this.templateModel.findOne({ tempId });
+  async findTemplateById(id: string) {
+    return this.templateModel.findById(id);
   }
 
   async getAllCategories(type: CategoryTypeEnum) {
