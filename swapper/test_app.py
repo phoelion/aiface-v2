@@ -9,6 +9,9 @@ from pydantic import BaseModel
 import os
 from crop import watermark_adder
 from add_height import height_increaser, height_decrease
+import uuid
+
+from swapper.src.PostProcess.utils import postprocess
 
 
 class Config:
@@ -103,7 +106,7 @@ async def read_root(images: Images):
         result = run_application(config)
         if result == True:
             img_path = (os.path.abspath(os.path.join(os.getcwd(), '..', "public", "img")))
-            height_decrease(img_path + "/swap_{}".format(images.image_1))
+            height_decrease(img_path + "/swap_{}".format(uuid.uuid4()))
 
             if images.watermark == "false":
                 return {
