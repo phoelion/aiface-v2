@@ -53,7 +53,7 @@ export class FaceSwapController {
   async swapWithTemplateVideos(@Req() req: RequestWithUser, @UploadedFile() image: Express.Multer.File, @Body('templateId') templateId: string) {
     if (!image) throw new BadRequestException('you must upload an image');
 
-    const swapResult = await this.faceSwapService.templateVideoSwap(image, templateId, req.user._id);
+    const swapResult = await this.faceSwapService.templateVideoSwap(req.user._id, image, templateId);
     const finalUrl = `${PUBLIC_BASE_URL}/${swapResult}`;
     return {
       success: true,
