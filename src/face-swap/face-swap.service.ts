@@ -167,7 +167,7 @@ export class FaceSwapService {
         {
           image_1: sourceImage.path,
           image_2: PHOTO_TEMPLATES_BASE_PATH + '/' + template.file,
-          watermark: false,
+          watermark: "false",
         },
         {
           headers: {
@@ -208,7 +208,7 @@ export class FaceSwapService {
         {
           image_1: sourceImage.path,
           image_2: targetImage.path,
-          watermark: false,
+          watermark: "false",
         },
         {
           headers: {
