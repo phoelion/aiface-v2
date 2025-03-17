@@ -131,3 +131,6 @@ export const VIDEO_TEMPLATES_POSTFIX = '-low-res-webp.webp';
 
 export const VIDEO_TEMPLATES_BASE_PATH =  join(__dirname, '..', '..', 'public', 'templates', 'video')
 export const PHOTO_TEMPLATES_BASE_PATH =  join(__dirname, '..', '..', 'public', 'templates', 'photo')
+
+
+export const PUBLIC_BASE_URL = process.env[`BASE_URL_${process.env.NODE_ENV}`] + '/public'

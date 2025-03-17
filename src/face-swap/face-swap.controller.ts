@@ -3,7 +3,7 @@ import { FaceSwapService } from './face-swap.service';
 import { FileFieldsInterceptor, FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { videoOptions } from './uploadImage.service';
 import { ConfigService } from '@nestjs/config';
-import { MULTER_OPTIONS_PUBLIC } from '../config/app-constants';
+import { MULTER_OPTIONS_PUBLIC, PUBLIC_BASE_URL } from '../config/app-constants';
 import { AuthGuard } from '../common/guards/auth.guard';
 import { RequestWithUser } from '../common/interfaces/request-with-user';
 
@@ -24,7 +24,7 @@ export class FaceSwapController {
     if (!images || images.length !== 2) throw new BadRequestException('you must upload images');
 
     const swapResult = await this.faceSwapService.photoSwap(images[0], images[1], req.user._id);
-    const finalUrl = `${this.configService.get<string>('baseUrl')}/${swapResult}`;
+    const finalUrl = `${PUBLIC_BASE_URL}/${swapResult}`;
     return {
       success: true,
       message: 'photos swapped successfully',
