@@ -187,7 +187,7 @@ class SimSwap:
 
         if detection.bbox is None:
             if for_id:
-                raise "Can't detect a face! Please change the ID image!"
+                raise ValueError("Can't detect a face! Please change the ID image!")
             return None, None, detection.score
 
         kps = detection.key_points
@@ -230,6 +230,10 @@ class SimSwap:
         align_att_imgs, att_transforms, att_detection_score = self.run_detect_align(
             att_image, for_id=False
         )
+
+        if not align_att_imgs or len(align_att_imgs) > 3:
+            raise ValueError("Bad image, change that please!")
+
 
         if align_att_imgs is None and att_transforms is None:
             return att_image
