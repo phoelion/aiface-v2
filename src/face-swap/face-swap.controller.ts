@@ -49,11 +49,11 @@ export class FaceSwapController {
 
   @Post('/template-photo-swap')
   @UseGuards(AuthGuard, DevGuard)
-  @UseInterceptors(FileInterceptor('video', MULTER_OPTIONS_PUBLIC))
-  async swapWithTemplateVideos(@Req() req: RequestWithUser, @UploadedFile() video: Express.Multer.File, @Body('templateId') templateId: string) {
-    if (!video) throw new BadRequestException('you must upload a video');
+  @UseInterceptors(FileInterceptor('image', MULTER_OPTIONS_PUBLIC))
+  async swapWithTemplateVideos(@Req() req: RequestWithUser, @UploadedFile() image: Express.Multer.File, @Body('templateId') templateId: string) {
+    if (!image) throw new BadRequestException('you must upload an image');
 
-    const swapResult = await this.faceSwapService.templatePhotoSwap(image, templateId, req.user._id);
+    const swapResult = await this.faceSwapService.templateVideoSwap(image, templateId, req.user._id);
     const finalUrl = `${PUBLIC_BASE_URL}/${swapResult}`;
     return {
       success: true,
