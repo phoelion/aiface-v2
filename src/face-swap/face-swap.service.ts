@@ -167,7 +167,7 @@ export class FaceSwapService {
         {
           image_1: sourceImage.path,
           image_2: PHOTO_TEMPLATES_BASE_PATH + '/' + template.file,
-          watermark: "false",
+          watermark: 'false',
         },
         {
           headers: {
@@ -175,13 +175,11 @@ export class FaceSwapService {
           },
         }
       );
-      if (data.success === false) {
+      if (data.success === 'false') {
         await this.photoSwapLogAndNotificationHandler(userId, sourceImage.filename, template.file, template.id, RequestStatusesEnum.FAILED, null, data.message);
         throw new BadRequestException(data.message ? data.message : '');
       } else {
-        const resultName = crypto.randomUUID() + '.png';
-        this.base64ToImage(data.result, sourceImage.path + '/' + resultName);
-        await this.photoSwapLogAndNotificationHandler(userId, sourceImage.filename, template.file, template.id, RequestStatusesEnum.SUCCESS, resultName);
+        await this.photoSwapLogAndNotificationHandler(userId, sourceImage.filename, template.file, template.id, RequestStatusesEnum.SUCCESS, data.result);
         return data.result;
       }
     } catch (error) {
@@ -208,7 +206,7 @@ export class FaceSwapService {
         {
           image_1: sourceImage.path,
           image_2: targetImage.path,
-          watermark: "false",
+          watermark: 'false',
         },
         {
           headers: {
@@ -216,14 +214,12 @@ export class FaceSwapService {
           },
         }
       );
-      console.log(data);
+
       if (data.success === 'false') {
         await this.photoSwapLogAndNotificationHandler(userId, sourceImage.filename, targetImage.filename, null, RequestStatusesEnum.FAILED, null, data.message);
         throw new BadRequestException(data.message ? data.message : '');
       } else {
-        const resultName = crypto.randomUUID() + '.png';
-        this.base64ToImage(data.result, sourceImage.path + '/' + resultName);
-        await this.photoSwapLogAndNotificationHandler(userId, sourceImage.filename, targetImage.filename, null, RequestStatusesEnum.SUCCESS, resultName);
+        await this.photoSwapLogAndNotificationHandler(userId, sourceImage.filename, targetImage.filename, null, RequestStatusesEnum.SUCCESS, data.result);
         return data.result;
       }
     } catch (error) {
