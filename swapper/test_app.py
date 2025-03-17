@@ -73,6 +73,7 @@ def load_image_into_numpy_array(data):
 async def read_root(images: Images):
     id_image = os.path.abspath(os.path.join(os.getcwd(), '..', 'public', images.image_1))
     att_image = os.path.abspath(os.path.join(os.getcwd(), '..', 'public', images.directory, images.image_2))
+    print(att_image)
     sim_output_dir = os.path.abspath(os.path.join(os.getcwd(), '..', 'public'))
 
     output_dir = os.path.abspath(os.path.join(os.getcwd(), '..', 'public', 'img'))
