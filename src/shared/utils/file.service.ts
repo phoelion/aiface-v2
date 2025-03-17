@@ -179,7 +179,7 @@ export async function takeFirstFrameScreenshot(videoPath: string, outputPath: st
 
 export async function createLowResTemplate(inputPath: string, outputPath: string, filename: string) {
   return new Promise((resolve, reject) => {
-    const command = `ffmpeg -i ${inputPath} -vf "scale=360:-1" -t 1  -vsync cfr -vcodec libwebp -lossless 0 -q:v 75 -preset default -loop 0 -an ${outputPath}/${filename}`;
+    const command = `ffmpeg -i ${inputPath} -vf "scale=360:-1" -t 1 -r 10 -vsync cfr -vcodec libwebp -lossless 0 -q:v 75 -preset default -loop 0 -an ${outputPath}/${filename}`;
 
     exec(command, (error, stdout, stderr) => {
       if (error) {
