@@ -9,7 +9,6 @@ from pydantic import BaseModel
 import os
 from crop import watermark_adder
 from add_height import height_increaser, height_decrease
-import uuid
 
 
 class Config:
@@ -59,6 +58,7 @@ class Config:
 class Images(BaseModel):
     image_1: str
     image_2: str
+    directory: str
     watermark: str
 
 
@@ -71,8 +71,8 @@ def load_image_into_numpy_array(data):
 
 @app.post("/")
 async def read_root(images: Images):
-    id_image = os.path.abspath(images.image_1)
-    att_image = os.path.abspath(images.image_2)
+    id_image = os.path.abspath(os.path.join(os.getcwd(), '..', 'public', images.image_1))
+    att_image = os.path.abspath(os.path.join(os.getcwd(), '..', 'public', images.directory, images.image_2))
     sim_output_dir = os.path.abspath(os.path.join(os.getcwd(), '..', 'public'))
 
     output_dir = os.path.abspath(os.path.join(os.getcwd(), '..', 'public', 'img'))
@@ -103,17 +103,16 @@ async def read_root(images: Images):
         height_increaser(att_image)
         result = run_application(config)
         if result == True:
-            out_name = uuid.uuid4()
             img_path = (os.path.abspath(os.path.join(os.getcwd(), '..', "public", "img")))
-            height_decrease(img_path + "/swap_{}".format(out_name))
+            height_decrease(img_path + "/swap_{}".format(images.image_2))
 
             if images.watermark == "false":
                 return {
                     "success": "true",
-                    "result": "img/swap_{}".format(out_name)
+                    "result": "img/swap_{}".format(images.image_2)
                 }
             else:
-                result_2 = watermark_adder("swap_{}".format(images.image_1), save_path)
+                result_2 = watermark_adder("swap_{}".format(images.image_2), save_path)
 
                 if not result_2:
                     raise Exception("InternalServerError")

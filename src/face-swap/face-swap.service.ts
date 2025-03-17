@@ -165,8 +165,9 @@ export class FaceSwapService {
       const { data } = await axios.post(
         this.configService.get<string>('FACESWAP_URL'),
         {
-          image_1: sourceImage.path,
-          image_2: PHOTO_TEMPLATES_BASE_PATH + '/' + template.file,
+          image_1: sourceImage.filename,
+          image_2: template.file,
+          directory: 'templates/photo',
           watermark: 'false',
         },
         {
@@ -204,8 +205,9 @@ export class FaceSwapService {
       const { data } = await axios.post(
         this.configService.get<string>('FACESWAP_URL'),
         {
-          image_1: sourceImage.path,
-          image_2: targetImage.path,
+          image_1: sourceImage.filename,
+          image_2: targetImage.filename,
+          directory: '',
           watermark: 'false',
         },
         {
