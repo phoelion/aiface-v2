@@ -47,7 +47,7 @@ export class FaceSwapController {
     };
   }
 
-  @Post('/template-photo-swap')
+  @Post('/template-video-swap')
   @UseGuards(AuthGuard, DevGuard)
   @UseInterceptors(FileInterceptor('image', MULTER_OPTIONS_PUBLIC))
   async swapWithTemplateVideos(@Req() req: RequestWithUser, @UploadedFile() image: Express.Multer.File, @Body('templateId') templateId: string) {
