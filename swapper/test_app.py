@@ -11,8 +11,6 @@ from crop import watermark_adder
 from add_height import height_increaser, height_decrease
 import uuid
 
-from swapper.src.PostProcess.utils import postprocess
-
 
 class Config:
     def __init__(
