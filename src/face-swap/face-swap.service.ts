@@ -157,8 +157,8 @@ export class FaceSwapService {
       if (!user) throw new NotFoundException('user not found');
 
       const template = await this.templateService.findTemplateById(templateId);
-
-      if (!template || template.type !== TemplateTypeEnum.IMAGE) {
+      console.log(template);
+      if (!template || template.type !== TemplateTypeEnum.IMAGE.toString()) {
         throw new BadRequestException('Template is not valid');
       }
 
