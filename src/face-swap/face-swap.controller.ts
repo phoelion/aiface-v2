@@ -36,7 +36,22 @@ export class FaceSwapController {
   @UseGuards(AuthGuard, DevGuard)
   @UseInterceptors(FileInterceptor('image', MULTER_OPTIONS_PUBLIC))
   async swapWithTemplatePhotos(@Req() req: RequestWithUser, @UploadedFile() image: Express.Multer.File, @Body('templateId') templateId: string) {
-    if (!image) throw new BadRequestException('you must upload images');
+    if (!image) throw new BadRequestException('you must upload an image');
+
+    const swapResult = await this.faceSwapService.templatePhotoSwap(image, templateId, req.user._id);
+    const finalUrl = `${PUBLIC_BASE_URL}/${swapResult}`;
+    return {
+      success: true,
+      message: 'photos swapped successfully',
+      result: finalUrl,
+    };
+  }
+
+  @Post('/template-photo-swap')
+  @UseGuards(AuthGuard, DevGuard)
+  @UseInterceptors(FileInterceptor('video', MULTER_OPTIONS_PUBLIC))
+  async swapWithTemplateVideos(@Req() req: RequestWithUser, @UploadedFile() video: Express.Multer.File, @Body('templateId') templateId: string) {
+    if (!video) throw new BadRequestException('you must upload a video');
 
     const swapResult = await this.faceSwapService.templatePhotoSwap(image, templateId, req.user._id);
     const finalUrl = `${PUBLIC_BASE_URL}/${swapResult}`;
@@ -86,24 +101,4 @@ export class FaceSwapController {
     }
     return result;
   }
-
-  // @Post('/aiface')
-  // @UseGuards(AuthGuard, DevGuard)
-  // @UseInterceptors(FilesInterceptor('images', 1, multerOptions))
-  // async updateAiface(@Req() req: RequestWithUser, @UploadedFiles() images: Array<Express.Multer.File>) {
-  //   const { user } = req;
-  //   const { tempId } = req.body;
-  //
-  //   if (!images || images.length !== 1) throw new BadRequestException('you must upload images');
-  //   const fileNames = images.map((el) => {
-  //     return el.filename;
-  //   });
-  //
-  //   const swapResult = await this.faceSwapService.updateAiface(fileNames, user.id, true, user.email, tempId);
-  //   return {
-  //     success: true,
-  //     message: 'photos swapped successfully',
-  //     result: swapResult,
-  //   };
-  // }
 }

@@ -15,7 +15,7 @@ import { MessagesEnum } from '../notification/enums/messages.enum';
 import { SwapTypesEnum } from '../users/enums/swap-types.enum';
 import { RequestStatusesEnum } from '../users/enums/request-statuses.enum';
 import { audioExtractor, compressImage, imageToBase64, newFpsReducer, videoAudioMerger } from '../shared/utils/file.service';
-import { FPS, PHOTO_TEMPLATES_BASE_PATH } from '../config/app-constants';
+import { FPS, PHOTO_TEMPLATES_BASE_PATH, VIDEO_TEMPLATES_BASE_PATH } from '../config/app-constants';
 import { IVideoResult } from './interfaces/video-result';
 import { downloadFile } from '../shared/utils/downloader';
 import { TemplateTypeEnum } from '../template/enums/template-type.enum';
@@ -241,6 +241,42 @@ export class FaceSwapService {
     const duration = await getVideoDurationInSeconds(videoPath);
 
     return Math.round(duration);
+  }
+
+  async templateVideoSwap(userId: string, sourceImage: Express.Multer.File, templateId: string) {
+    const template = await this.templateService.findTemplateById(templateId);
+
+    if (!template || template.type !== TemplateTypeEnum.VIDEO.toString()) {
+      throw new BadRequestException('Template is not valid');
+    }
+    const targetVideo = {
+      filename: template.file,
+      path: VIDEO_TEMPLATES_BASE_PATH + '/' + template.file,
+      destination: VIDEO_TEMPLATES_BASE_PATH,
+    };
+
+    const videoName = targetVideo.filename;
+    const imageName = sourceImage.filename;
+
+    const videoPath = targetVideo.path;
+    const audioOutputPath = join(targetVideo.destination, videoName.split('.')[0] + `_${Date.now}` + '.mp3');
+    const reducedFPSVideo = join(targetVideo.destination, videoName.split('.')[0] + `_${Date.now}` + '_reduced' + '.mp4');
+    const sourceImagePath = sourceImage.path;
+
+    const resizedImageOutputPath = sourceImage.destination;
+
+    const resizedImage = await compressImage(sourceImagePath, resizedImageOutputPath, imageName);
+    const res = await newFpsReducer(videoPath, FPS, reducedFPSVideo);
+    await audioExtractor(videoPath, audioOutputPath);
+
+    const videoAssetId = await this.novitaService.getVideoAssetId(reducedFPSVideo);
+    const encoded = this.imageToBase64(join(resizedImageOutputPath, `${resizedImage}`));
+
+    const { task_id: jobId } = await this.novitaService.getJobId(videoAssetId, encoded);
+    return {
+      jobId: jobId,
+      videoName: videoName.split('.')[0],
+    };
   }
 
   async videoSwapV2(userId: string, imageFile: Express.Multer.File, videoFile: Express.Multer.File) {
