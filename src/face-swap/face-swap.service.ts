@@ -19,6 +19,7 @@ import { FPS, PHOTO_TEMPLATES_BASE_PATH } from '../config/app-constants';
 import { IVideoResult } from './interfaces/video-result';
 import { downloadFile } from '../shared/utils/downloader';
 import { TemplateTypeEnum } from '../template/enums/template-type.enum';
+import * as path from 'node:path';
 
 const { getVideoDurationInSeconds } = require('get-video-duration');
 
@@ -164,8 +165,8 @@ export class FaceSwapService {
       const { data } = await axios.post(
         this.configService.get<string>('FACESWAP_URL'),
         {
-          source_image: this.imageToBase64(sourceImage.path),
-          target_image: this.imageToBase64(PHOTO_TEMPLATES_BASE_PATH + '/' + template.file),
+          image_1: sourceImage.path,
+          image_2: PHOTO_TEMPLATES_BASE_PATH + '/' + template.file,
           watermark: false,
         },
         {
@@ -174,7 +175,7 @@ export class FaceSwapService {
           },
         }
       );
-      if (data.success === 'false') {
+      if (data.success === false) {
         await this.photoSwapLogAndNotificationHandler(userId, sourceImage.filename, template.file, template.id, RequestStatusesEnum.FAILED, null, data.message);
         throw new BadRequestException(data.message ? data.message : '');
       } else {
@@ -205,8 +206,8 @@ export class FaceSwapService {
       const { data } = await axios.post(
         this.configService.get<string>('FACESWAP_URL'),
         {
-          source_image: this.imageToBase64(sourceImage.path),
-          target_image: this.imageToBase64(targetImage.path),
+          source_image: sourceImage.path,
+          target_image: targetImage.path,
           watermark: false,
         },
         {
