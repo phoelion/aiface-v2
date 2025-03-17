@@ -51,7 +51,7 @@ export class TemplateService {
     const resizeDim = 340;
     const screenShotName = crypto.randomUUID() + '.jpeg';
     const screenShot = await takeFirstFrameScreenshot(video.path, video.destination, screenShotName);
-    console.log(screenShot);
+
     const resizedImage = await compressImage(video.destination + '/' + screenShot, video.destination, screenShotName, resizeDim);
 
     const lowResWebpName = video.filename.split('.')[0] + VIDEO_TEMPLATES_POSTFIX;

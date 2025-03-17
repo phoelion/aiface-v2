@@ -44,8 +44,8 @@ export const TemplateSchema = SchemaFactory.createForClass(Template);
 TemplateSchema.set('toJSON', {
   transform: function (doc, ret, opt) {
     ret.id = ret._id;
-    ret.thumbnailUrl = PHOTO_TEMPLATES_BASE_URL + ret.thumbnail;
-
+    ret.thumbnailUrl = ret.type === TemplateTypeEnum.IMAGE ? PHOTO_TEMPLATES_BASE_URL + ret.thumbnail : VIDEO_TEMPLATES_BASE_URL + ret.thumbnail;
+    ret.fileUrl = ret.type === TemplateTypeEnum.IMAGE ? PHOTO_TEMPLATES_BASE_URL + ret.file : VIDEO_TEMPLATES_BASE_URL + ret.file;
     ret.thumbnailVideo = ret.type == TemplateTypeEnum.VIDEO ? VIDEO_TEMPLATES_BASE_URL + ret.file.split('.')[0] + VIDEO_TEMPLATES_POSTFIX : null;
 
     delete ret['__v'];
