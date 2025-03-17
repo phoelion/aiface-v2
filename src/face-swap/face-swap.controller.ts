@@ -33,11 +33,12 @@ export class FaceSwapController {
   }
 
   @Post('/template-photo-swap')
-  @UseGuards(AuthGuard, DevGuard)
+  @UseGuards(AuthGuard)
   @UseInterceptors(FileInterceptor('image', MULTER_OPTIONS_PUBLIC))
   async swapWithTemplatePhotos(@Req() req: RequestWithUser, @UploadedFile() image: Express.Multer.File, @Body('templateId') templateId: string) {
     if (!image) throw new BadRequestException('you must upload images');
 
+    console.log(templateId);
     const swapResult = await this.faceSwapService.templatePhotoSwap(image, templateId, req.user._id);
     const finalUrl = `${this.configService.get<string>('baseUrl')}/${swapResult}`;
     return {
