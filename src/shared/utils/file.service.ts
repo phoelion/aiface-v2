@@ -206,3 +206,36 @@ export function imageToBase64(imagePath: string): string {
     throw error;
   }
 }
+
+export function createThumbnail(inputVideoPath, outputDir, fileName) {
+  return new Promise((resolve, reject) => {
+    ffmpeg(inputVideoPath)
+      .screenshots({
+        count: 1,
+        folder: outputDir,
+        size: '540x720', // Thumbnail resolution
+        filename: `${fileName}-thumbnail.png`,
+      })
+      .on('end', () => {
+        resolve(`${fileName}-thumbnail.png`);
+      })
+      .on('error', (err) => {
+        console.error('Error creating thumbnail:', err);
+        reject(err);
+      });
+  });
+}
+export function newLowResVideo(inputFile: string, outputDir: string, fileName: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const command = `ffmpeg -y -loglevel quiet -i "${inputFile}" -t 1 -vf scale=360:540 -r 20 -c:v libx264 -profile:v baseline -level 3.0 -crf 23 -pix_fmt yuv420p -an "${outputDir}/${fileName}-low-res.mp4"`;
+
+    exec(command, (error, stdout, stderr) => {
+      if (error) {
+        reject(`Error processing video: ${error.message}`);
+        return;
+      }
+
+      resolve(`${fileName}-low-res.mp4`);
+    });
+  });
+}

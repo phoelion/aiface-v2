@@ -32,6 +32,9 @@ export class Template {
   @Prop({ type: Number, default: 0 })
   sortOrder: number;
 
+  @Prop({ type: Number, default: 10 })
+  durationSec: number;
+
   @Prop({ type: mongoose.SchemaTypes.ObjectId, ref: 'Category', required: true })
   categoryId: Category;
 

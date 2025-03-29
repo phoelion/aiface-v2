@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { Template, TemplateDocument } from './model/templates.schema';
@@ -6,7 +6,7 @@ import { Categories } from './model/category.enum';
 
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
-import { compressImage, createLowResTemplate, takeFirstFrameScreenshot } from '../shared/utils/file.service';
+import { compressImage, createLowResTemplate, createThumbnail, takeFirstFrameScreenshot } from '../shared/utils/file.service';
 import { Category } from './model/category.schema';
 import { CreateTemplateDto } from './dtos/create-template.dto';
 import { TemplateTypeEnum } from './enums/template-type.enum';
@@ -14,6 +14,11 @@ import { CreateCategoryDto } from './dtos/create-category.dto';
 import * as crypto from 'node:crypto';
 import { VIDEO_TEMPLATES_POSTFIX } from '../config/app-constants';
 import { CategoryTypeEnum } from './enums/category-type.enum';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { access } from 'node:fs/promises';
+import { downloadFile } from 'src/shared/utils/downloader';
+import getVideoDurationInSeconds from 'get-video-duration';
 
 @Injectable()
 export class TemplateService {
@@ -103,18 +108,6 @@ export class TemplateService {
     await this.templateModel.updateMany(conditions, data, { new: true });
   }
 
-  // async updateMultiTemplatesV2() {
-  //   const data = await this.templateModel.find({ category: Categories.Event });
-  //
-  //   for (let doc of data) {
-  //     doc.thumbnail = `Image-${doc.tempId}.png`;
-  //     doc.cover = `Image-${doc.tempId}.png`;
-  //     await doc.save({});
-  //   }
-  //
-  //   console.log(data.length);
-  // }
-
   async findAllTemplates() {
     return this.templateModel
       .find({
@@ -164,6 +157,61 @@ export class TemplateService {
         sortOrder: lastSortOrder[0].sortOrder + 1,
         category,
       });
+    }
+  }
+  private async checkFileExists(filePath: string) {
+    try {
+      await access(filePath);
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  async createMultiVideoTemplates() {
+    const categoryIds = (await this.categoryModel.find({ _id: { $ne: '674b39e013c6482b4f3112fa' } }).select('_id')).map((el) => el._id);
+    const allTemplates = JSON.parse(readFileSync(join(__dirname, '..', '..', 'data', 'mivo.json'), 'utf-8'));
+    const newData = allTemplates[4].resourceList.slice(0, 4);
+
+    for (let template of newData) {
+      const newVideoName = crypto.randomUUID() + '.mp4';
+      const originalTemplateName = template.videoPreviewUrl.split('/').at(-1);
+      const videoPath = join(__dirname, '..', '..', 'public', 'video-templates', originalTemplateName);
+      const newVideoPath = join(__dirname, '..', '..', 'public', 'video-templates', newVideoName);
+
+      const fileExists = await this.checkFileExists(videoPath);
+      if (!fileExists) {
+        Logger.log(`[+] Downloading: ${originalTemplateName}`);
+        try {
+          await downloadFile(template.videoPreviewUrl, newVideoPath);
+        } catch (error) {
+          console.log(error);
+        }
+      }
+      const outputDir = join(__dirname, '..', '..', 'public', 'video-templates');
+      const pureTemplateName = newVideoName.split('.')[0];
+      const thumbnailPath = join(__dirname, '..', '..', 'public', 'video-templates', `${pureTemplateName}-thumbnail.png`);
+      const thumbnailRes = await createThumbnail(newVideoPath, outputDir, pureTemplateName);
+      const resizedImage = await compressImage(thumbnailPath, outputDir, pureTemplateName);
+
+      const lowResWebpName = pureTemplateName + VIDEO_TEMPLATES_POSTFIX;
+
+      await createLowResTemplate(newVideoPath, outputDir, lowResWebpName);
+
+      const duration = Math.ceil(await getVideoDurationInSeconds(newVideoPath));
+
+      await this.templateModel.create({
+        thumbnail: resizedImage,
+        categoryId: categoryIds[Math.ceil(Math.random() * categoryIds.length) - 1],
+        isActive: true,
+        isFree: false,
+        file: newVideoName,
+        sortOrder: 1,
+        type: TemplateTypeEnum.VIDEO,
+        durationSec: duration,
+      });
+
+      Logger.log(template.id);
     }
   }
 }
