@@ -48,12 +48,23 @@ export class TemplateController {
     if (!video) {
       throw new BadRequestException('Video is required');
     }
-    //TODO: add logic of creating video templates
+
     const data = await this.templateService.createVideoTemplate(body, video);
     return {
       success: true,
       message: 'template successfully created',
       data,
+    };
+  }
+
+  @Roles('admin')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Post('/create-multi-video-templates')
+  async createMultiVideoTemplates(@Req() req: RequestWithUser) {
+    const data = this.templateService.createMultiVideoTemplates();
+    return {
+      success: true,
+      message: 'templates are going to create',
     };
   }
 

@@ -169,7 +169,7 @@ export class TemplateService {
   }
 
   async createMultiVideoTemplates() {
-    const categoryIds = (await this.categoryModel.find({ _id: { $ne: '674b39e013c6482b4f3112fa' } }).select('_id')).map((el) => el._id);
+    const categoryIds = (await this.categoryModel.find({ _id: { $ne: '674b39e013c6482b4f3112fa' }, type: TemplateTypeEnum.VIDEO }).select('_id')).map((el) => el._id);
     const allTemplates = JSON.parse(readFileSync(join(__dirname, '..', '..', 'data', 'mivo.json'), 'utf-8'));
     const newData = allTemplates[4].resourceList.slice(0, 4);
 
