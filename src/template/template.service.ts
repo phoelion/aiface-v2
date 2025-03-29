@@ -191,8 +191,13 @@ export class TemplateService {
       const outputDir = join(__dirname, '..', '..', 'public', 'templates', 'video');
       const pureTemplateName = newVideoName.split('.')[0];
       const thumbnailPath = join(__dirname, '..', '..', 'public', 'templates', 'video', `${pureTemplateName}-thumbnail.png`);
-      const thumbnailRes = await createThumbnail(newVideoPath, outputDir, pureTemplateName);
-      const resizedImage = await compressImage(thumbnailPath, outputDir, pureTemplateName);
+
+      const resizeDim = 340;
+      const screenShotName = crypto.randomUUID() + '.jpeg';
+
+      const screenShot = await takeFirstFrameScreenshot(newVideoPath, outputDir, screenShotName);
+
+      const resizedImage = await compressImage(outputDir + '/' + screenShot, outputDir, screenShotName, resizeDim);
 
       const lowResWebpName = pureTemplateName + VIDEO_TEMPLATES_POSTFIX;
 
