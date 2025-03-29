@@ -176,8 +176,8 @@ export class TemplateService {
     for (let template of newData) {
       const newVideoName = crypto.randomUUID() + '.mp4';
       const originalTemplateName = template.videoPreviewUrl.split('/').at(-1);
-      const videoPath = join(__dirname, '..', '..', 'public', 'video-templates', originalTemplateName);
-      const newVideoPath = join(__dirname, '..', '..', 'public', 'video-templates', newVideoName);
+      const videoPath = join(__dirname, '..', '..', 'public', 'templates', 'video', originalTemplateName);
+      const newVideoPath = join(__dirname, '..', '..', 'public', 'templates', 'video', newVideoName);
 
       const fileExists = await this.checkFileExists(videoPath);
       if (!fileExists) {
@@ -188,9 +188,9 @@ export class TemplateService {
           console.log(error);
         }
       }
-      const outputDir = join(__dirname, '..', '..', 'public', 'video-templates');
+      const outputDir = join(__dirname, '..', '..', 'public', 'templates', 'video');
       const pureTemplateName = newVideoName.split('.')[0];
-      const thumbnailPath = join(__dirname, '..', '..', 'public', 'video-templates', `${pureTemplateName}-thumbnail.png`);
+      const thumbnailPath = join(__dirname, '..', '..', 'public', 'templates', 'video', `${pureTemplateName}-thumbnail.png`);
       const thumbnailRes = await createThumbnail(newVideoPath, outputDir, pureTemplateName);
       const resizedImage = await compressImage(thumbnailPath, outputDir, pureTemplateName);
 
