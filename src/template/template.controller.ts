@@ -70,6 +70,17 @@ export class TemplateController {
 
   @Roles('admin')
   @UseGuards(AuthGuard, RolesGuard)
+  @Post('/create-multi-image-templates')
+  async addPreviousImageTemplates(@Req() req: RequestWithUser) {
+    const data = await this.templateService.addPreviousImageTemplates();
+    return {
+      success: true,
+      message: 'templates are going to create',
+    };
+  }
+
+  @Roles('admin')
+  @UseGuards(AuthGuard, RolesGuard)
   @Post('/categories')
   async createCategory(@Body() body: CreateCategoryDto, @Req() req: RequestWithUser) {
     const data = await this.templateService.createCategory(body);
