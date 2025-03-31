@@ -18,7 +18,7 @@ export const MULTER_OPTIONS_PUBLIC = {
     fileSize: 100_000_000,
   },
   fileFilter: (req: any, file: any, cb: any) => {
-    const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'];
+    const allowedExtensions = ['jpg', 'jpeg', 'png', 'heic', 'heif'];
     const arr = file.originalname.toLowerCase().split('.');
     const extension = arr[arr.length - 1];
 
@@ -50,7 +50,7 @@ export const MULTER_OPTIONS_HOME = {
     fileSize: 10000000,
   },
   fileFilter: (req: any, file: any, cb: any) => {
-    const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'];
+    const allowedExtensions = ['jpg', 'jpeg', 'png', 'heic', 'heif'];
     const arr = file.originalname.toLowerCase().split('.');
     const extension = arr[arr.length - 1];
 
@@ -82,7 +82,7 @@ export const MULTER_OPTIONS_IMAGE_TEMPLATE = {
     fileSize: 10_000_000,
   },
   fileFilter: (req: any, file: any, cb: any) => {
-    const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'];
+    const allowedExtensions = ['jpg', 'jpeg', 'png', 'heic', 'heif'];
     const arr = file.originalname.toLowerCase().split('.');
     const extension = arr[arr.length - 1];
 
