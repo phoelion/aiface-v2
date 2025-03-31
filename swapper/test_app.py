@@ -9,7 +9,8 @@ from pydantic import BaseModel
 import os
 from crop import watermark_adder
 from add_height import height_increaser, height_decrease
-
+import uuid
+import shutil
 
 class Config:
     def __init__(
@@ -65,6 +66,26 @@ class Images(BaseModel):
 app = FastAPI()
 
 
+def copy_image_with_uuid(images):
+    try:
+        # Get the absolute path of the original image
+        original_path = os.path.abspath(os.path.join(os.getcwd(), '..', 'public', images.directory, images.image_2))
+        
+        # Generate a UUID-based filename with the same extension
+        _, ext = os.path.splitext(images.image_2)
+        new_filename = f"{uuid.uuid4()}{ext}"
+        
+        # Define the destination path
+        destination_path = os.path.join(os.path.dirname(original_path), new_filename)
+
+        # Copy the file
+        shutil.copy2(original_path, destination_path)
+        
+        return destination_path  # Return the new file path
+    except Exception as e:
+        print(f"Error copying image: {e}")
+        return None
+
 def load_image_into_numpy_array(data):
     return np.array()
 
@@ -72,7 +93,8 @@ def load_image_into_numpy_array(data):
 @app.post("/")
 async def read_root(images: Images):
     id_image = os.path.abspath(os.path.join(os.getcwd(), '..', 'public', images.image_1))
-    att_image = os.path.abspath(os.path.join(os.getcwd(), '..', 'public', images.directory, images.image_2))
+    
+    att_image = copy_image_with_uuid(images)
     sim_output_dir = os.path.abspath(os.path.join(os.getcwd(), '..', 'public'))
 
     output_dir = os.path.abspath(os.path.join(os.getcwd(), '..', 'public', 'img'))
