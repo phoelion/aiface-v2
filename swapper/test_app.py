@@ -66,15 +66,11 @@ class Images(BaseModel):
 app = FastAPI()
 
 
-def copy_image_with_uuid(images):
+def copy_image_with_uuid(images,new_filename):
     try:
         # Get the absolute path of the original image
         original_path = os.path.abspath(os.path.join(os.getcwd(), '..', 'public', images.directory, images.image_2))
-        
-        # Generate a UUID-based filename with the same extension
-        _, ext = os.path.splitext(images.image_2)
-        new_filename = f"{uuid.uuid4()}{ext}"
-        
+          
         # Define the destination path
         destination_path = os.path.join(os.path.dirname(original_path), new_filename)
 
@@ -94,7 +90,10 @@ def load_image_into_numpy_array(data):
 async def read_root(images: Images):
     id_image = os.path.abspath(os.path.join(os.getcwd(), '..', 'public', images.image_1))
     
-    att_image = copy_image_with_uuid(images)
+    _, ext = os.path.splitext(images.image_2)
+    new_filename = f"{uuid.uuid4()}{ext}"
+
+    att_image = copy_image_with_uuid(images, new_filename)
     sim_output_dir = os.path.abspath(os.path.join(os.getcwd(), '..', 'public'))
 
     output_dir = os.path.abspath(os.path.join(os.getcwd(), '..', 'public', 'img'))
@@ -126,15 +125,15 @@ async def read_root(images: Images):
         result = run_application(config)
         if result == True:
             img_path = (os.path.abspath(os.path.join(os.getcwd(), '..', "public", "img")))
-            height_decrease(img_path + "/swap_{}".format(images.image_2))
+            height_decrease(img_path + "/swap_{}".format(new_filename))
 
             if images.watermark == "false":
                 return {
                     "success": "true",
-                    "result": "img/swap_{}".format(images.image_2)
+                    "result": "img/swap_{}".format(new_filename)
                 }
             else:
-                result_2 = watermark_adder("swap_{}".format(images.image_2), save_path)
+                result_2 = watermark_adder("swap_{}".format(new_filename), save_path)
 
                 if not result_2:
                     raise Exception("InternalServerError")
