@@ -18,14 +18,17 @@ export const MULTER_OPTIONS_PUBLIC = {
     fileSize: 100_000_000,
   },
   fileFilter: (req: any, file: any, cb: any) => {
-    const arr = file.originalname.split('.');
+    const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'];
+    const arr = file.originalname.toLowerCase().split('.');
+    const extension = arr[arr.length - 1];
 
-    if (['jpg', 'jpeg', 'png'].includes(arr[arr.length - 1])) {
+    if (allowedExtensions.includes(extension)) {
       cb(null, true);
     } else {
       cb(new BadRequestException(`Unsupported file type ${extname(file.originalname)}`), false);
     }
   },
+
   storage: diskStorage({
     destination: (req: any, file: any, cb: any) => {
       const uploadPath = join(multerConfig.dest);
@@ -47,14 +50,17 @@ export const MULTER_OPTIONS_HOME = {
     fileSize: 10000000,
   },
   fileFilter: (req: any, file: any, cb: any) => {
-    const arr = file.originalname.split('.');
+    const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'];
+    const arr = file.originalname.toLowerCase().split('.');
+    const extension = arr[arr.length - 1];
 
-    if (['jpg', 'jpeg', 'png'].includes(arr[arr.length - 1])) {
+    if (allowedExtensions.includes(extension)) {
       cb(null, true);
     } else {
       cb(new BadRequestException(`Unsupported file type ${extname(file.originalname)}`), false);
     }
   },
+
   storage: diskStorage({
     destination: (req: any, file: any, cb: any) => {
       const uploadPath = join(multerConfig.home);
@@ -76,9 +82,11 @@ export const MULTER_OPTIONS_IMAGE_TEMPLATE = {
     fileSize: 10_000_000,
   },
   fileFilter: (req: any, file: any, cb: any) => {
-    const arr = file.originalname.split('.');
+    const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'];
+    const arr = file.originalname.toLowerCase().split('.');
+    const extension = arr[arr.length - 1];
 
-    if (['jpg', 'jpeg', 'png'].includes(arr[arr.length - 1])) {
+    if (allowedExtensions.includes(extension)) {
       cb(null, true);
     } else {
       cb(new BadRequestException(`Unsupported file type ${extname(file.originalname)}`), false);
@@ -129,8 +137,7 @@ export const VIDEO_TEMPLATES_BASE_URL = process.env[`BASE_URL_${process.env.NODE
 
 export const VIDEO_TEMPLATES_POSTFIX = '-low-res-webp.webp';
 
-export const VIDEO_TEMPLATES_BASE_PATH =  join(__dirname, '..', '..', 'public', 'templates', 'video')
-export const PHOTO_TEMPLATES_BASE_PATH =  join(__dirname, '..', '..', 'public', 'templates', 'photo')
+export const VIDEO_TEMPLATES_BASE_PATH = join(__dirname, '..', '..', 'public', 'templates', 'video');
+export const PHOTO_TEMPLATES_BASE_PATH = join(__dirname, '..', '..', 'public', 'templates', 'photo');
 
-
-export const PUBLIC_BASE_URL = process.env[`BASE_URL_${process.env.NODE_ENV}`] + '/public'
+export const PUBLIC_BASE_URL = process.env[`BASE_URL_${process.env.NODE_ENV}`] + '/public';

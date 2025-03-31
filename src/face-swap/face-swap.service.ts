@@ -100,6 +100,10 @@ export class FaceSwapService {
         case '.webp':
           mimeType = 'image/webp';
           break;
+        case '.heic':
+        case '.heif':
+          mimeType = 'image/heic';
+          break;
         default:
           throw new Error('Unsupported file type');
       }
