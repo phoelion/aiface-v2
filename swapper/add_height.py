@@ -7,7 +7,7 @@ def height_increaser(image_path:str):
         image = cv2.imread(image_path)
         height, width, _ = image.shape
         new_height = int(height * 1.1)
-        print(f"new_height: {new_height}")  
+        print(f"prev_height: {height},\nnew_height: {new_height}")  
         white_image = np.ones((new_height, width, 3), dtype=np.uint8) * 255
         white_image[0:height, 0:width] = image
         cv2.imwrite(image_path, white_image)
