@@ -397,19 +397,25 @@ export class FaceSwapService {
 
   async prepareVideoHistory(history: UserRequests): Promise<IHistoryItem> {
     try {
-      let res;
+      let res: IVideoResult;
       if (history.result !== null) {
         res = this.prepareFinalResult(history.result, 'video is ready', history.jobId);
       } else {
-        console.log(history.user._id);
         res = await this.getVideoResultV2(history.user._id, history.jobId);
 
         if (res.success && res.isLoading) {
           res.vidUrl = LOADING_VIDEO_URL;
         }
       }
-      res.type = SwapTypesEnum.VIDEO;
-      return res;
+      let result: IHistoryItem = {
+        resultUrl: res.vidUrl,
+        message: 'image is ready',
+        type: history.type,
+        isLoading: res.isLoading,
+        success: res.success,
+      };
+
+      return result;
     } catch (error) {
       console.log(error);
     }
