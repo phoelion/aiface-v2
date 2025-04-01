@@ -100,4 +100,14 @@ export class FaceSwapController {
     }
     return result;
   }
+
+  @UseGuards(AuthGuard, DevGuard)
+  @Get('swap-history')
+  async getUserSwapsHistory(@Req() req: RequestWithUser) {
+    const swaps = await this.faceSwapService.getUserSwapsHistory(req.user._id);
+    return {
+      success: true,
+      swaps,
+    };
+  }
 }

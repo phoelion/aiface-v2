@@ -33,8 +33,13 @@ export class UsersController {
     };
   }
 
-
-
-
-
+  @UseGuards(AuthGuard)
+  @Post('/toggle-add-to-history')
+  async toggleAddToHistory(@Req() req: RequestWithUser) {
+    const user = await this.userService.toggleAddToHistory(req.user._id);
+    return {
+      success: true,
+      user,
+    };
+  }
 }

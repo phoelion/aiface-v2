@@ -15,11 +15,13 @@ import { MessagesEnum } from '../notification/enums/messages.enum';
 import { SwapTypesEnum } from '../users/enums/swap-types.enum';
 import { RequestStatusesEnum } from '../users/enums/request-statuses.enum';
 import { audioExtractor, compressImage, imageToBase64, newFpsReducer, videoAudioMerger } from '../shared/utils/file.service';
-import { FPS, PHOTO_TEMPLATES_BASE_PATH, VIDEO_TEMPLATES_BASE_PATH } from '../config/app-constants';
+import { FPS, LOADING_VIDEO_URL, PHOTO_TEMPLATES_BASE_PATH, VIDEO_TEMPLATES_BASE_PATH } from '../config/app-constants';
 import { IVideoResult } from './interfaces/video-result';
 import { downloadFile } from '../shared/utils/downloader';
 import { TemplateTypeEnum } from '../template/enums/template-type.enum';
 import * as path from 'node:path';
+import { UserRequests } from 'src/users/schema/user-requests.schema';
+import { IHistoryItem } from './interfaces/history-item.interface';
 
 const { getVideoDurationInSeconds } = require('get-video-duration');
 
@@ -391,5 +393,51 @@ export class FaceSwapService {
         isLoading: false,
       };
     }
+  }
+
+  async prepareVideoHistory(history: UserRequests): Promise<IHistoryItem> {
+    try {
+      let res;
+      if (history.result !== null) {
+        res = this.prepareFinalResult(history.result, 'video is ready', history.jobId);
+      } else {
+        console.log(history.user._id);
+        res = await this.getVideoResultV2(history.user._id, history.jobId);
+
+        if (res.success && res.isLoading) {
+          res.vidUrl = LOADING_VIDEO_URL;
+        }
+      }
+      res.type = SwapTypesEnum.VIDEO;
+      return res;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async prepareImageHistory(history: UserRequests): Promise<IHistoryItem> {
+    const result: IHistoryItem = {
+      resultUrl: history.result,
+      message: 'image is ready',
+      type: history.type,
+      isLoading: false,
+      success: history.status == RequestStatusesEnum.SUCCESS,
+    };
+    return result;
+  }
+
+  async getUserSwapsHistory(userId: string) {
+    const histories = await this.userService.getUserSwaps(userId);
+
+    let finalResults = [];
+
+    for (let history of histories) {
+      let result;
+      if (history.type == SwapTypesEnum.VIDEO) result = this.prepareVideoHistory(history);
+      else if (history.type == SwapTypesEnum.IMAGE) result = this.prepareImageHistory(history);
+      finalResults.push(result);
+    }
+
+    return finalResults;
   }
 }

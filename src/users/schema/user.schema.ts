@@ -3,11 +3,13 @@ import { HydratedDocument } from 'mongoose';
 
 export type UserDocument = HydratedDocument<User>;
 
-
 @Schema({ timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } })
 export class User {
   @Prop({ max: 80, trim: true, type: String, unique: true })
   username: string;
+
+  @Prop({ default: true })
+  autoAddToHistory: boolean;
 
   @Prop()
   oneSignalId: string;
@@ -25,4 +27,3 @@ export class User {
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
-

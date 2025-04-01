@@ -2,7 +2,7 @@ import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { ConfigService } from '@nestjs/config';
 import { User } from './schema/user.schema';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { NotificationService } from 'src/notification/notification.service';
 import { UserRequests } from './schema/user-requests.schema';
 import { RequestStatusesEnum } from './enums/request-statuses.enum';
@@ -77,5 +77,21 @@ export class UsersService {
 
   async updateVideoStatus(userId: string, jobId: string, result: string, status: RequestStatusesEnum) {
     await this.userRequestsModel.updateOne({ user: userId, jobId }, { result, status });
+  }
+
+  async getUserSwaps(userId: string): Promise<UserRequests[]> {
+    return this.userRequestsModel.find({
+      addedToUserHistory: true,
+      user: userId,
+    });
+  }
+
+  async toggleAddToHistory(userId: string) {
+    const user = await this.userModel.findById(userId);
+    if (!user) throw new BadRequestException('User not found');
+
+    const updatedUser = await this.userModel.findByIdAndUpdate(userId, { autoAddToHistory: !user.autoAddToHistory }, { new: true });
+
+    return updatedUser;
   }
 }
