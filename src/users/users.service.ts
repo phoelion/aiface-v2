@@ -52,7 +52,17 @@ export class UsersService {
     return this.userModel.findById(id);
   }
 
-  public async createHistory(userId: string, jobId: string, templateId: string, firstFile: string, secondFile: string, result: string, type: SwapTypesEnum, status: RequestStatusesEnum) {
+  public async createHistory(
+    userId: string,
+    jobId: string,
+    templateId: string,
+    firstFile: string,
+    secondFile: string,
+    result: string,
+    type: SwapTypesEnum,
+    status: RequestStatusesEnum,
+    addedToUserHistory: boolean
+  ) {
     return this.userRequestsModel.create({
       user: userId,
       jobId,
@@ -62,6 +72,7 @@ export class UsersService {
       result,
       type,
       status,
+      addedToUserHistory,
     });
   }
 
