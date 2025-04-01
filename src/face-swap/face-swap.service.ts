@@ -435,6 +435,8 @@ export class FaceSwapService {
       let result;
       if (history.type == SwapTypesEnum.VIDEO) result = this.prepareVideoHistory(history);
       else if (history.type == SwapTypesEnum.IMAGE) result = this.prepareImageHistory(history);
+
+      console.log(result);
       finalResults.push(result);
     }
 
