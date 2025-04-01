@@ -421,7 +421,6 @@ export class FaceSwapService {
       message: 'image is ready',
       type: history.type,
       isLoading: false,
-      jobId: null,
       success: history.status == RequestStatusesEnum.SUCCESS,
     };
     return result;
@@ -437,7 +436,6 @@ export class FaceSwapService {
       if (history.type == SwapTypesEnum.VIDEO) result = await this.prepareVideoHistory(history);
       else if (history.type == SwapTypesEnum.IMAGE) result = await this.prepareImageHistory(history);
 
-      console.log(result);
       finalResults.push(result);
     }
 
