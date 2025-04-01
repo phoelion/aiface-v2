@@ -433,8 +433,8 @@ export class FaceSwapService {
 
     for (let history of histories) {
       let result;
-      if (history.type == SwapTypesEnum.VIDEO) result = this.prepareVideoHistory(history);
-      else if (history.type == SwapTypesEnum.IMAGE) result = this.prepareImageHistory(history);
+      if (history.type == SwapTypesEnum.VIDEO) result = await this.prepareVideoHistory(history);
+      else if (history.type == SwapTypesEnum.IMAGE) result = await this.prepareImageHistory(history);
 
       console.log(result);
       finalResults.push(result);
