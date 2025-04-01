@@ -409,7 +409,7 @@ export class FaceSwapService {
       }
       let result: IHistoryItem = {
         resultUrl: res.vidUrl,
-        message: 'image is ready',
+        message: res.message,
         type: history.type,
         isLoading: res.isLoading,
         success: res.success,
