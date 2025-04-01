@@ -15,7 +15,7 @@ import { MessagesEnum } from '../notification/enums/messages.enum';
 import { SwapTypesEnum } from '../users/enums/swap-types.enum';
 import { RequestStatusesEnum } from '../users/enums/request-statuses.enum';
 import { audioExtractor, compressImage, imageToBase64, newFpsReducer, videoAudioMerger } from '../shared/utils/file.service';
-import { FPS, LOADING_VIDEO_URL, PHOTO_TEMPLATES_BASE_PATH, VIDEO_TEMPLATES_BASE_PATH } from '../config/app-constants';
+import { FPS, LOADING_VIDEO_URL, PHOTO_TEMPLATES_BASE_PATH, PUBLIC_BASE_URL, VIDEO_TEMPLATES_BASE_PATH } from '../config/app-constants';
 import { IVideoResult } from './interfaces/video-result';
 import { downloadFile } from '../shared/utils/downloader';
 import { TemplateTypeEnum } from '../template/enums/template-type.enum';
@@ -417,10 +417,11 @@ export class FaceSwapService {
 
   async prepareImageHistory(history: UserRequests): Promise<IHistoryItem> {
     const result: IHistoryItem = {
-      resultUrl: history.result,
+      resultUrl: `${PUBLIC_BASE_URL}/${history.result}`,
       message: 'image is ready',
       type: history.type,
       isLoading: false,
+      jobId: null,
       success: history.status == RequestStatusesEnum.SUCCESS,
     };
     return result;
@@ -432,7 +433,7 @@ export class FaceSwapService {
     let finalResults = [];
 
     for (let history of histories) {
-      let result;
+      let result: IHistoryItem;
       if (history.type == SwapTypesEnum.VIDEO) result = await this.prepareVideoHistory(history);
       else if (history.type == SwapTypesEnum.IMAGE) result = await this.prepareImageHistory(history);
 
