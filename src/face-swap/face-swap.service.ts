@@ -39,7 +39,7 @@ export class FaceSwapService {
   private async photoSwapLogAndNotificationHandler(user: User, firstImageName: string, secondImageName: string, templateId = null, status: RequestStatusesEnum, result: string, message?: string) {
     const toBeSendMessage =
       status === RequestStatusesEnum.SUCCESS ? MessagesEnum.SUCCESS_SWAP.replace('{{user}}', user._id) : MessagesEnum.FAILED_SWAP.replace('{{user}}', user._id).replace('{{reason}}', message);
-
+    console.log(user, user.autoAddToHistory);
     await this.notificationService.sendNotification(toBeSendMessage);
     await this.userService.createHistory(user._id, null, templateId, firstImageName, secondImageName, result, SwapTypesEnum.IMAGE, status, user.autoAddToHistory);
   }
@@ -58,7 +58,7 @@ export class FaceSwapService {
       status === RequestStatusesEnum.SUCCESS ? MessagesEnum.SUCCESS_SWAP.replace('{{user}}', user._id) : MessagesEnum.FAILED_SWAP.replace('{{user}}', user._id).replace('{{reason}}', message);
 
     await this.notificationService.sendNotification(toBeSendMessage);
-    console.log(user, user.autoAddToHistory);
+
     await this.userService.createHistory(user._id, null, templateId, firstImageName, secondImageName, result, SwapTypesEnum.IMAGE, status, user.autoAddToHistory);
   }
 
