@@ -260,6 +260,7 @@ export class FaceSwapService {
   }
 
   async templateVideoSwap(userId: string, sourceImage: Express.Multer.File, templateId: string) {
+    const user = await this.userService.getUser(userId);
     const template = await this.templateService.findTemplateById(templateId);
 
     if (!template || template.type !== TemplateTypeEnum.VIDEO.toString()) {
@@ -289,6 +290,8 @@ export class FaceSwapService {
     const encoded = this.imageToBase64(join(resizedImageOutputPath, `${resizedImage}`));
 
     const { task_id: jobId } = await this.novitaService.getJobId(videoAssetId, encoded);
+
+    await this.videoSwapLogAndNotificationHandler(user, sourceImage.filename, template.file, jobId, templateId, null, RequestStatusesEnum.INIT);
     return {
       jobId: jobId,
       videoName: videoName.split('.')[0],
