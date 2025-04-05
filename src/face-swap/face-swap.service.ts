@@ -398,6 +398,7 @@ export class FaceSwapService {
 
       return result;
     } catch (error) {
+      console.log(error);
       return {
         success: false,
         vidUrl: null,
