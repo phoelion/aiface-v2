@@ -20,6 +20,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { AppLogsModule } from './applogs/app-logs.module';
 import { SERVE_ROOT_URL } from './config/app-constants';
 import { FaceSwapModule } from './face-swap/face-swap.module';
+import { PaymentsModule } from './payments/payments.module';
 
 dotenv.config();
 
@@ -78,6 +79,7 @@ const nodeEnv = process.env.NODE_ENV;
 
     AppLogsModule,
     FaceSwapModule,
+    PaymentsModule,
   ],
 
   controllers: [AppController],
