@@ -276,8 +276,8 @@ export class FaceSwapService {
     const imageName = sourceImage.filename;
 
     const videoPath = targetVideo.path;
-    const audioOutputPath = join(targetVideo.destination, videoName.split('.')[0] + '.mp3');
-    const reducedFPSVideo = join(targetVideo.destination, videoName.split('.')[0] + '_reduced' + '.mp4');
+    const audioOutputPath = join(__dirname, '..', '..', 'public', videoName.split('.')[0] + '.mp3');
+    const reducedFPSVideo = join(__dirname, '..', '..', 'public', videoName.split('.')[0] + '_reduced' + '.mp4');
     const sourceImagePath = sourceImage.path;
 
     const resizedImageOutputPath = sourceImage.destination;
