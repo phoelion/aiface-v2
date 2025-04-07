@@ -19,11 +19,28 @@ export class FaceSwapController {
 
   @Post('/photo-swap')
   @UseGuards(AuthGuard, DevGuard)
-  @UseInterceptors(FilesInterceptor('images', 2, MULTER_OPTIONS_PUBLIC))
-  async swapPhotos(@Req() req: RequestWithUser, @UploadedFiles() images: Array<Express.Multer.File>) {
-    if (!images || images.length !== 2) throw new BadRequestException('you must upload images');
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'firstImage', maxCount: 1 },
+        { name: 'secondImage', maxCount: 1 },
+      ],
+      MULTER_OPTIONS_PUBLIC
+    )
+  )
+  async swapPhotos(
+    @Req() req: RequestWithUser,
+    @UploadedFiles()
+    files: {
+      firstImage: Express.Multer.File[];
+      secondImage: Express.Multer.File[];
+    }
+  ) {
+    if (!files.firstImage || !files.secondImage || !files) {
+      throw new BadRequestException('you must upload images');
+    }
 
-    const swapResult = await this.faceSwapService.photoSwap(images[0], images[1], req.user._id);
+    const swapResult = await this.faceSwapService.photoSwap(files.firstImage[0], files.secondImage[0], req.user._id);
     const finalUrl = `${PUBLIC_BASE_URL}/${swapResult}`;
     return {
       success: true,
