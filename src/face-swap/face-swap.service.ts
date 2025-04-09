@@ -422,6 +422,7 @@ export class FaceSwapService {
         }
       }
       let result: IHistoryItem = {
+        id: history._id,
         resultUrl: res.vidUrl,
         message: res.message,
         type: history.type,
@@ -437,6 +438,7 @@ export class FaceSwapService {
 
   async prepareImageHistory(history: UserRequests): Promise<IHistoryItem> {
     const result: IHistoryItem = {
+      id: history._id,
       resultUrl: `${PUBLIC_BASE_URL}/${history.result}`,
       message: 'image is ready',
       type: history.type,
@@ -460,5 +462,13 @@ export class FaceSwapService {
     }
 
     return finalResults;
+  }
+
+  async deleteSwapHistoryItem(userId: string, id: string) {
+    return this.userService.deleteUserHistoryItem(userId, id);
+  }
+
+  async addToHistory(userId: string, id: string) {
+    return this.userService.addToHistory(userId, id);
   }
 }

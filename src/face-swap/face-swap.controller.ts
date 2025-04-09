@@ -1,4 +1,20 @@
-import { Controller, Post, ClassSerializerInterceptor, UseInterceptors, UploadedFiles, BadRequestException, Req, UseGuards, Param, Get, UploadedFile, Body } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  ClassSerializerInterceptor,
+  UseInterceptors,
+  UploadedFiles,
+  BadRequestException,
+  Req,
+  UseGuards,
+  Param,
+  Get,
+  UploadedFile,
+  Body,
+  HttpCode,
+  Delete,
+  Patch,
+} from '@nestjs/common';
 import { FaceSwapService } from './face-swap.service';
 import { FileFieldsInterceptor, FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { videoOptions } from './uploadImage.service';
@@ -126,5 +142,23 @@ export class FaceSwapController {
       success: true,
       swaps,
     };
+  }
+
+  @HttpCode(204)
+  @UseGuards(AuthGuard)
+  @Delete('/swap-history/:id')
+  async deleteCreation(@Req() req: RequestWithUser, @Param('id') id: string) {
+    const creations = await this.faceSwapService.deleteSwapHistoryItem(req.user._id, id);
+
+    return { success: true, creations };
+  }
+
+  @HttpCode(204)
+  @UseGuards(AuthGuard)
+  @Patch('/swap-history/:id')
+  async addToHistory(@Req() req: RequestWithUser, @Param('id') id: string) {
+    const creations = await this.faceSwapService.addToHistory(req.user._id, id);
+
+    return { success: true, creations };
   }
 }
