@@ -422,7 +422,7 @@ export class FaceSwapService {
         }
       }
       let result: IHistoryItem = {
-        id: history._id,
+        id: history.id,
         resultUrl: res.vidUrl,
         message: res.message,
         type: history.type,
@@ -438,7 +438,7 @@ export class FaceSwapService {
 
   async prepareImageHistory(history: UserRequests): Promise<IHistoryItem> {
     const result: IHistoryItem = {
-      id: history._id,
+      id: history.id,
       resultUrl: `${PUBLIC_BASE_URL}/${history.result}`,
       message: 'image is ready',
       type: history.type,
