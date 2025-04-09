@@ -41,7 +41,7 @@ export class FaceSwapService {
       status === RequestStatusesEnum.SUCCESS ? MessagesEnum.SUCCESS_SWAP.replace('{{user}}', user._id) : MessagesEnum.FAILED_SWAP.replace('{{user}}', user._id).replace('{{reason}}', message);
     console.log(user, user.autoAddToHistory);
     await this.notificationService.sendNotification(toBeSendMessage);
-    await this.userService.createHistory(user._id, null, templateId, firstImageName, secondImageName, result, SwapTypesEnum.IMAGE, status, user.autoAddToHistory);
+    return this.userService.createHistory(user._id, null, templateId, firstImageName, secondImageName, result, SwapTypesEnum.IMAGE, status, user.autoAddToHistory);
   }
 
   private async photoSwapLogAndNotificationHandlerWithUserId(
@@ -74,7 +74,7 @@ export class FaceSwapService {
     }
 
     await this.notificationService.sendNotification(toBeSendMessage);
-    await this.userService.createHistory(user._id, jobId, templateId, imageName, videoName, result, SwapTypesEnum.VIDEO, status, user.autoAddToHistory);
+    return this.userService.createHistory(user._id, jobId, templateId, imageName, videoName, result, SwapTypesEnum.VIDEO, status, user.autoAddToHistory);
   }
 
   private async checkFileExists(filePath: string) {
@@ -196,8 +196,11 @@ export class FaceSwapService {
         await this.photoSwapLogAndNotificationHandler(user, sourceImage.filename, template.file, template.id, RequestStatusesEnum.FAILED, null, data.message);
         throw new BadRequestException(data.message ? data.message : '');
       } else {
-        await this.photoSwapLogAndNotificationHandler(user, sourceImage.filename, template.file, template.id, RequestStatusesEnum.SUCCESS, data.result);
-        return data.result;
+        const history = await this.photoSwapLogAndNotificationHandler(user, sourceImage.filename, template.file, template.id, RequestStatusesEnum.SUCCESS, data.result);
+        return {
+          result: data.result,
+          historyId: history.id,
+        };
       }
     } catch (error) {
       if (error.code === 'ECONNREFUSED') {
@@ -232,13 +235,16 @@ export class FaceSwapService {
           },
         }
       );
-      console.log(data);
+
       if (data.success === 'false') {
         await this.photoSwapLogAndNotificationHandler(user, sourceImage.filename, targetImage.filename, null, RequestStatusesEnum.FAILED, null, data.message);
         throw new BadRequestException(data.message ? data.message : '');
       } else {
-        await this.photoSwapLogAndNotificationHandler(user, sourceImage.filename, targetImage.filename, null, RequestStatusesEnum.SUCCESS, data.result);
-        return data.result;
+        const history = await this.photoSwapLogAndNotificationHandler(user, sourceImage.filename, template.file, template.id, RequestStatusesEnum.SUCCESS, data.result);
+        return {
+          result: data.result,
+          historyId: history.id,
+        };
       }
     } catch (error) {
       if (error.code === 'ECONNREFUSED') {
@@ -291,10 +297,11 @@ export class FaceSwapService {
 
     const { task_id: jobId } = await this.novitaService.getJobId(videoAssetId, encoded);
 
-    await this.videoSwapLogAndNotificationHandler(user, sourceImage.filename, template.file, jobId, templateId, null, RequestStatusesEnum.INIT);
+    const history = await this.videoSwapLogAndNotificationHandler(user, sourceImage.filename, template.file, jobId, templateId, null, RequestStatusesEnum.INIT);
     return {
       jobId: jobId,
       videoName: videoName.split('.')[0],
+      historyId: history.id,
     };
   }
 
@@ -303,8 +310,12 @@ export class FaceSwapService {
     result = await this.normalVideoSwap(imageFile, videoFile);
     const user = await this.userService.getUser(userId);
 
-    await this.videoSwapLogAndNotificationHandler(user, imageFile.filename, videoFile.filename, result.jobId, null, null, RequestStatusesEnum.INIT);
-    return { jobId: result.jobId };
+    const history = await this.videoSwapLogAndNotificationHandler(user, imageFile.filename, videoFile.filename, result.jobId, null, null, RequestStatusesEnum.INIT);
+    return {
+      jobId: result.jobId,
+
+      historyId: history.id,
+    };
   }
 
   async normalVideoSwap(sourceImage: Express.Multer.File, targetVideo: Express.Multer.File) {
