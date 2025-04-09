@@ -240,7 +240,7 @@ export class FaceSwapService {
         await this.photoSwapLogAndNotificationHandler(user, sourceImage.filename, targetImage.filename, null, RequestStatusesEnum.FAILED, null, data.message);
         throw new BadRequestException(data.message ? data.message : '');
       } else {
-        const history = await this.photoSwapLogAndNotificationHandler(user, sourceImage.filename, template.file, template.id, RequestStatusesEnum.SUCCESS, data.result);
+        const history = await this.photoSwapLogAndNotificationHandler(user, sourceImage.filename, targetImage.filename, null, RequestStatusesEnum.SUCCESS, data.result);
         return {
           result: data.result,
           historyId: history.id,
@@ -313,7 +313,6 @@ export class FaceSwapService {
     const history = await this.videoSwapLogAndNotificationHandler(user, imageFile.filename, videoFile.filename, result.jobId, null, null, RequestStatusesEnum.INIT);
     return {
       jobId: result.jobId,
-
       historyId: history.id,
     };
   }
