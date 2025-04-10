@@ -20,6 +20,9 @@ export class User {
   @Prop({ type: Object })
   token: { token: string; expires: Date };
 
+  @Prop({ default: 400 })
+  videoCredits: number;
+
   @Prop({ default: true, select: false })
   active: boolean;
   id: string;
