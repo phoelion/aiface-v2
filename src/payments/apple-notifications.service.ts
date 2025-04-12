@@ -12,10 +12,10 @@ import {
   AppStoreServerAPIClient,
   Environment,
   NotificationTypeV2, // Enum for notification types
-  Subtype,          // Enum for subtypes
+  Subtype, // Enum for subtypes
   SignedDataVerifier, // Class for verification
   VerificationException, // Specific error type from the library
-  ResponseBodyV2DecodedPayload
+  ResponseBodyV2DecodedPayload,
 } from '@apple/app-store-server-library'; // Import necessary components
 
 // Define interfaces based on the actual response structure
@@ -34,7 +34,7 @@ export class AppleNotificationsService implements OnModuleInit {
   private bundleId: string;
 
   constructor(
-    private readonly configService: ConfigService,
+    private readonly configService: ConfigService
     // HttpService is no longer needed for verification
   ) {
     // Get required config values immediately
@@ -43,9 +43,9 @@ export class AppleNotificationsService implements OnModuleInit {
     this.environment = envString === 'Production' ? Environment.PRODUCTION : Environment.SANDBOX;
 
     // Basic validation
-     if (!this.configService.get<string>('APPLE_ISSUER_ID')) throw new Error('Missing APPLE_ISSUER_ID config');
-     if (!this.configService.get<string>('APPLE_KEY_ID')) throw new Error('Missing APPLE_KEY_ID config');
-     if (!this.configService.get<string>('APPLE_PRIVATE_KEY_PATH')) throw new Error('Missing APPLE_PRIVATE_KEY_PATH config');
+    if (!this.configService.get<string>('APPLE_ISSUER_ID')) throw new Error('Missing APPLE_ISSUER_ID config');
+    if (!this.configService.get<string>('APPLE_KEY_ID')) throw new Error('Missing APPLE_KEY_ID config');
+    if (!this.configService.get<string>('APPLE_PRIVATE_KEY_PATH')) throw new Error('Missing APPLE_PRIVATE_KEY_PATH config');
   }
 
   // Use OnModuleInit for async initialization like reading the key file
@@ -67,23 +67,22 @@ export class AppleNotificationsService implements OnModuleInit {
       const certsPath = join(process.cwd(), 'certs');
 
       // Get list of all .cer files in certs directory
-      const cerFiles = readdirSync(certsPath).filter(file => file.endsWith('.cer'));
-      
+      const cerFiles = readdirSync(certsPath).filter((file) => file.endsWith('.cer'));
+
       // Read each .cer file and add to array
       for (const cerFile of cerFiles) {
-          const certPath = join(certsPath, cerFile);
-          const certData = readFileSync(certPath);
-          appleRootCAs.push(certData);
+        const certPath = join(certsPath, cerFile);
+        const certData = readFileSync(certPath);
+        appleRootCAs.push(certData);
       }
-      
+
       if (appleRootCAs.length === 0) {
-          this.logger.warn('No .cer files found in certs directory');
+        this.logger.warn('No .cer files found in certs directory');
       } else {
-          this.logger.log(`Loaded ${appleRootCAs.length} Apple root CA certificates`);
+        this.logger.log(`Loaded ${appleRootCAs.length} Apple root CA certificates`);
       }
 
-       this.verifier = new SignedDataVerifier(appleRootCAs, true, this.environment, this.bundleId)
-
+      this.verifier = new SignedDataVerifier(appleRootCAs, true, this.environment, this.bundleId);
 
       // Optional: Initialize the API client if you need other App Store Server API calls
       // this.apiClient = new AppStoreServerAPIClient(privateKey, keyId, issuerId, this.bundleId, this.environment);
@@ -114,7 +113,9 @@ export class AppleNotificationsService implements OnModuleInit {
       // 1. Verify the notification using the library's verifier
       // This handles JWS verification, certificate chain validation, and decoding.
       this.logger.debug('Attempting to verify and decode notification...');
+
       notificationPayload = await this.verifier.verifyAndDecodeNotification(signedPayload);
+      console.log(notificationPayload);
       this.logger.debug(`Verification successful. Notification Type: ${notificationPayload.notificationType}, Subtype: ${notificationPayload.subtype}`);
 
       // 2. Check for duplicate notifications (Idempotency)
@@ -130,8 +131,9 @@ export class AppleNotificationsService implements OnModuleInit {
       // 4. Mark notification as processed *after* successful processing
       this.processedNotifications.add(notificationPayload.notificationUUID);
 
-      this.logger.log(`Successfully processed notification UUID: ${notificationPayload.notificationUUID}, Type: ${notificationPayload.notificationType}, Subtype: ${notificationPayload.subtype || 'N/A'}`);
-
+      this.logger.log(
+        `Successfully processed notification UUID: ${notificationPayload.notificationUUID}, Type: ${notificationPayload.notificationType}, Subtype: ${notificationPayload.subtype || 'N/A'}`
+      );
     } catch (error) {
       const notificationUUID = notificationPayload?.notificationUUID || 'N/A'; // Get UUID if decoding started
       this.logger.error(`Error processing Apple notification (UUID: ${notificationUUID}): ${error.message}`, error.stack);
@@ -149,13 +151,12 @@ export class AppleNotificationsService implements OnModuleInit {
     }
   }
 
-
   /**
    * Processes the verified and decoded notification data provided by the Apple library.
    * Update your application state (database, user entitlements) here.
    */
   private async processDecodedNotification(
-    payload: NotificationPayload, // Use the type from the library
+    payload: NotificationPayload // Use the type from the library
   ): Promise<void> {
     // Extract data using types/enums from the library
     const { notificationType, subtype, notificationUUID, data } = payload;
@@ -170,7 +171,7 @@ export class AppleNotificationsService implements OnModuleInit {
     const appAccountToken = transactionInfo?.appAccountToken; // Your user identifier
 
     this.logger.log(
-      `Processing: UUID=${notificationUUID}, Type=${notificationType}, Subtype=${subtype}, Env=${environment}, OrigTxID=${originalTransactionId}, ProdID=${productId}, UserToken=${appAccountToken || 'N/A'}`,
+      `Processing: UUID=${notificationUUID}, Type=${notificationType}, Subtype=${subtype}, Env=${environment}, OrigTxID=${originalTransactionId}, ProdID=${productId}, UserToken=${appAccountToken || 'N/A'}`
     );
 
     // **IMPORTANT**: Implement your actual business logic here.
@@ -219,19 +220,19 @@ export class AppleNotificationsService implements OnModuleInit {
           break;
 
         case NotificationTypeV2.CONSUMPTION_REQUEST:
-           this.logger.log(`Handling CONSUMPTION_REQUEST for ${transactionId}`);
-           // Example: await this.iapService.creditConsumable(transactionId, appAccountToken);
-           break;
+          this.logger.log(`Handling CONSUMPTION_REQUEST for ${transactionId}`);
+          // Example: await this.iapService.creditConsumable(transactionId, appAccountToken);
+          break;
 
         case NotificationTypeV2.RENEWAL_EXTENDED:
-            this.logger.log(`Handling RENEWAL_EXTENDED for ${originalTransactionId}`);
-            // Example: await this.subscriptionService.updateRenewalDate(originalTransactionId, renewalInfo.renewalDate);
-            break;
+          this.logger.log(`Handling RENEWAL_EXTENDED for ${originalTransactionId}`);
+          // Example: await this.subscriptionService.updateRenewalDate(originalTransactionId, renewalInfo.renewalDate);
+          break;
 
         case NotificationTypeV2.REVOKE:
-            this.logger.log(`Handling REVOKE for ${originalTransactionId}`);
-            // Example: await this.subscriptionService.revokeAccess(originalTransactionId, 'REVOKED', subtype, appAccountToken);
-            break;
+          this.logger.log(`Handling REVOKE for ${originalTransactionId}`);
+          // Example: await this.subscriptionService.revokeAccess(originalTransactionId, 'REVOKED', subtype, appAccountToken);
+          break;
 
         // Add other notification types from NotificationTypeV2 enum as needed
         // e.g., OFFER_REDEEMED, RENEWAL_EXTENSION, TEST
@@ -243,10 +244,9 @@ export class AppleNotificationsService implements OnModuleInit {
       }
 
       // Simulate async DB operation
-      await new Promise(resolve => setTimeout(resolve, 50)); // Replace with actual async logic
+      await new Promise((resolve) => setTimeout(resolve, 50)); // Replace with actual async logic
 
       this.logger.log(`Finished processing logic for UUID: ${notificationUUID}`);
-
     } catch (processingError) {
       this.logger.error(`Error during internal processing of notification UUID ${notificationUUID}: ${processingError.message}`, processingError.stack);
       // Rethrow to be caught by the main handler in handleNotification
