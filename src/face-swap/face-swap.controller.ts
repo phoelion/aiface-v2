@@ -91,9 +91,9 @@ export class FaceSwapController {
     const swapResult = await this.faceSwapService.templateVideoSwap(req.user._id, image, templateId);
 
     if (!swapResult) {
-      return { success: false, jobId: null };
+      return { success: false, jobId: null, historyId: null };
     }
-    return { success: true, jobId: swapResult.jobId };
+    return { success: true, jobId: swapResult.jobId, historyId: swapResult.historyId };
   }
 
   @UseGuards(AuthGuard, DevGuard)
@@ -121,9 +121,9 @@ export class FaceSwapController {
 
     const swapResult = await this.faceSwapService.videoSwapV2(req.user._id, files.image[0], files.video[0]);
     if (!swapResult) {
-      return { success: false, jobId: null };
+      return { success: false, jobId: null, historyId: null };
     }
-    return { success: true, jobId: swapResult.jobId };
+    return { success: true, jobId: swapResult.jobId, historyId: swapResult.historyId };
   }
 
   @UseGuards(DevGuard, AuthGuard)
