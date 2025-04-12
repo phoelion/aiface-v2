@@ -171,7 +171,7 @@ export class AppleNotificationsService implements OnModuleInit {
     const appAccountToken = transactionInfo?.appAccountToken; // Your user identifier
 
 
-    console.log("transactionInfo",transactionInfo)
+    console.log("transactionInfo",await this.verifier.verifyAndDecodeNotification(data.signedTransactionInfo))
 
     this.logger.log(
       `Processing: UUID=${notificationUUID}, Type=${notificationType}, Subtype=${subtype}, Env=${environment}, OrigTxID=${originalTransactionId}, ProdID=${productId}, UserToken=${appAccountToken || 'N/A'}`
