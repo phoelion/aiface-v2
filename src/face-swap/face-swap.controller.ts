@@ -57,11 +57,12 @@ export class FaceSwapController {
     }
 
     const swapResult = await this.faceSwapService.photoSwap(files.firstImage[0], files.secondImage[0], req.user._id);
-    const finalUrl = `${PUBLIC_BASE_URL}/${swapResult}`;
+    const finalUrl = `${PUBLIC_BASE_URL}/${swapResult.result}`;
     return {
       success: true,
       message: 'photos swapped successfully',
       result: finalUrl,
+      historyId: swapResult.historyId,
     };
   }
 
@@ -72,11 +73,12 @@ export class FaceSwapController {
     if (!image) throw new BadRequestException('you must upload an image');
 
     const swapResult = await this.faceSwapService.templatePhotoSwap(image, templateId, req.user._id);
-    const finalUrl = `${PUBLIC_BASE_URL}/${swapResult}`;
+    const finalUrl = `${PUBLIC_BASE_URL}/${swapResult.result}`;
     return {
       success: true,
       message: 'photos swapped successfully',
       result: finalUrl,
+      historyId: swapResult.historyId,
     };
   }
 
