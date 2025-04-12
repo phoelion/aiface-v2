@@ -115,7 +115,7 @@ export class AppleNotificationsService implements OnModuleInit {
       this.logger.debug('Attempting to verify and decode notification...');
 
       notificationPayload = await this.verifier.verifyAndDecodeNotification(signedPayload);
-      console.log(notificationPayload);
+
       this.logger.debug(`Verification successful. Notification Type: ${notificationPayload.notificationType}, Subtype: ${notificationPayload.subtype}`);
 
       // 2. Check for duplicate notifications (Idempotency)
@@ -170,8 +170,8 @@ export class AppleNotificationsService implements OnModuleInit {
     const productId = transactionInfo?.productId || renewalInfo?.productId;
     const appAccountToken = transactionInfo?.appAccountToken; // Your user identifier
 
-
-    console.log("transactionInfo",await this.verifier.verifyAndDecodeNotification(data.signedTransactionInfo))
+    console.log('transactionInfo', await this.verifier.verifyAndDecodeTransaction(data.signedTransactionInfo));
+    if (data.signedRenewalInfo) console.log('signedTransactionInfo', await this.verifier.verifyAndDecodeRenewalInfo(data.signedRenewalInfo));
 
     this.logger.log(
       `Processing: UUID=${notificationUUID}, Type=${notificationType}, Subtype=${subtype}, Env=${environment}, OrigTxID=${originalTransactionId}, ProdID=${productId}, UserToken=${appAccountToken || 'N/A'}`
