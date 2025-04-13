@@ -43,7 +43,7 @@ export class AuthService {
     return { token, expires: tokenExpires.toDate() };
   }
 
-  async signup({ username }, ip) {
+  async signup({ username, appAccountToken }, ip) {
     const country = await getCountryFromRequest(ip);
     const user = await this.userService.findOne({ username });
     const rand = Math.random() > 0.5 ? 1 : 0;
@@ -51,6 +51,7 @@ export class AuthService {
     if (!user) {
       const newUser = await this.userService.create({
         username,
+        appAccountToken,
       });
 
       const token = await this.generateAuthToken(newUser);
