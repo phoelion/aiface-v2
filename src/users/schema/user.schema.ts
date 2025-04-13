@@ -14,7 +14,7 @@ export class User {
   @Prop()
   oneSignalId: string;
 
-  @Prop()
+  @Prop({ trim: true, type: String, unique: true })
   appAccountToken: string;
 
   @Prop({ enum: ['user', 'admin'], default: 'user' })
