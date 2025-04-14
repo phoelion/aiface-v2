@@ -168,7 +168,8 @@ export class AppleNotificationsService implements OnModuleInit {
     // Access decoded info directly if available (library handles decoding)
     const transactionInfo: DecodedSignedTransaction | undefined = await this.verifier.verifyAndDecodeTransaction(data.signedTransactionInfo);
     const renewalInfo: DecodedSignedRenewalInfo | undefined = await this.verifier.verifyAndDecodeRenewalInfo(data.signedRenewalInfo);
-
+    console.log('transactionInfo', transactionInfo);
+    console.log('renewalInfo', renewalInfo);
     const transactionId = transactionInfo?.transactionId;
     const originalTransactionId = transactionInfo?.originalTransactionId || renewalInfo?.originalTransactionId;
     const productId = transactionInfo?.productId || renewalInfo?.productId;
