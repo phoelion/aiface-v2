@@ -17,6 +17,9 @@ import {
   VerificationException, // Specific error type from the library
   ResponseBodyV2DecodedPayload,
 } from '@apple/app-store-server-library'; // Import necessary components
+import { UsersService } from 'src/users/users.service';
+import { Payment, PaymentStatus, ProductIds } from './schema/payment.schema';
+import { PaymentsService } from './payments.service';
 
 // Define interfaces based on the actual response structure
 type NotificationPayload = ResponseBodyV2DecodedPayload;
@@ -34,8 +37,9 @@ export class AppleNotificationsService implements OnModuleInit {
   private bundleId: string;
 
   constructor(
-    private readonly configService: ConfigService
-    // HttpService is no longer needed for verification
+    private readonly configService: ConfigService,
+    private readonly userService: UsersService,
+    private readonly paymentService: PaymentsService
   ) {
     // Get required config values immediately
     this.bundleId = this.configService.getOrThrow<string>('APPLE_BUNDLE_ID');
@@ -183,7 +187,8 @@ export class AppleNotificationsService implements OnModuleInit {
           if (!transactionInfo?.expiresDate) {
             this.logger.warn(`SUBSCRIBED event for ${originalTransactionId} missing expiresDate.`);
           }
-          // Example: await this.subscriptionService.grantOrUpdateAccess(originalTransactionId, productId, transactionInfo.expiresDate, appAccountToken, environment);
+          await this.initialSubscriptionHandler(notificationUUID, notificationType, subtype, environment, originalTransactionId, productId, appAccountToken, transactionInfo, renewalInfo);
+
           break;
 
         case NotificationTypeV2.DID_RENEW:
@@ -252,5 +257,63 @@ export class AppleNotificationsService implements OnModuleInit {
       // Rethrow to be caught by the main handler in handleNotification
       throw processingError;
     }
+  }
+
+  private subscriptionDateCalculator(productId: ProductIds): Date {
+    const currentTime = new Date();
+    const result = new Date(currentTime);
+
+    switch (productId) {
+      case ProductIds.ANNUAL:
+        result.setFullYear(result.getFullYear() + 1);
+        return result;
+
+      case ProductIds.WEEKLY:
+        result.setDate(result.getDate() + 7);
+        return result;
+
+      case ProductIds.WEEKLY_FAMILY:
+        result.setDate(result.getDate() + 7);
+        return result;
+
+      default:
+        console.log(`Unsupported product ID: ${productId}`);
+        result.setFullYear(result.getFullYear() - 1);
+        return result;
+    }
+  }
+
+  private async initialSubscriptionHandler(
+    notificationUUID: string,
+    notificationType: string,
+    subtype: string,
+    environment: string,
+    originalTransactionId: string,
+    productId: string,
+    appAccountToken: string,
+    transactionInfo: DecodedSignedTransaction,
+    renewalInfo: DecodedSignedRenewalInfo
+  ) {
+    const user = await this.userService.getUserByUsername(appAccountToken);
+    //handle payment creation
+    const payment = new Payment();
+    payment.notificationSubtype = subtype;
+    payment.appleRenewalInfo = renewalInfo;
+    payment.appleTransactionInfo = transactionInfo;
+    payment.userId = user._id;
+    payment.notificationType = notificationType;
+    payment.transactionId = originalTransactionId;
+    payment.productId = productId;
+    payment.environment = environment;
+    payment.amount = transactionInfo.price;
+    payment.currency = transactionInfo.currency;
+    payment.status = PaymentStatus.COMPLETED;
+    const paymentDocument = await this.paymentService.createPayment(payment);
+
+    //handle user grants
+    user.validSubscriptionDate = this.subscriptionDateCalculator(productId as ProductIds);
+    await user.save();
+
+    console.log(payment, user);
   }
 }

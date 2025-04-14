@@ -26,6 +26,9 @@ export class User {
   @Prop({ default: 400 })
   videoCredits: number;
 
+  @Prop({ default: new Date() })
+  validSubscriptionDate: Date;
+
   @Prop({ default: true, select: false })
   active: boolean;
   id: string;

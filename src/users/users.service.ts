@@ -1,7 +1,7 @@
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { ConfigService } from '@nestjs/config';
-import { User } from './schema/user.schema';
+import { User, UserDocument } from './schema/user.schema';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { NotificationService } from 'src/notification/notification.service';
 import { UserRequests } from './schema/user-requests.schema';
@@ -50,6 +50,9 @@ export class UsersService {
 
   public async getUser(id: string): Promise<User> {
     return this.userModel.findById(id);
+  }
+  public async getUserByUsername(username: string): Promise<UserDocument> {
+    return this.userModel.findOne({ username });
   }
 
   public async createHistory(

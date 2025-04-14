@@ -45,7 +45,7 @@ export class AuthService {
 
   async signup({ username, appAccountToken }, ip) {
     const country = await getCountryFromRequest(ip);
-    const user = await this.userService.findOne({ username });
+    const user = await this.userService.findOne({ username, appAccountToken });
     const rand = Math.random() > 0.5 ? 1 : 0;
 
     if (!user) {

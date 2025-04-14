@@ -18,6 +18,11 @@ export enum PaymentMethod {
   BANK_TRANSFER = 'bank_transfer',
 }
 
+export enum ProductIds {
+  ANNUAL = 'Fancy.Annual',
+  WEEKLY = 'Fancy.weekly',
+  WEEKLY_FAMILY = 'Fancy.family.sharing.Weekly',
+}
 // Apple-specific transaction data
 export interface AppleTransactionInfo {
   transactionId: string;
