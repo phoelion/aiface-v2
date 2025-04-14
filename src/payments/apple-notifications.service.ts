@@ -192,6 +192,17 @@ export class AppleNotificationsService implements OnModuleInit {
 
           break;
 
+        case NotificationTypeV2.DID_CHANGE_RENEWAL_PREF:
+          this.logger.log(`Handling SUBSCRIBED event for ${originalTransactionId}`);
+          if (!transactionInfo?.expiresDate) {
+            this.logger.warn(`SUBSCRIBED event for ${originalTransactionId} missing expiresDate.`);
+          }
+          await this.changeSubscriptionHandler(notificationUUID, notificationType, subtype, environment, originalTransactionId, productId, appAccountToken, transactionInfo, renewalInfo);
+
+          break;
+
+          break;
+
         case NotificationTypeV2.DID_RENEW:
           this.logger.log(`Handling DID_RENEW event for ${originalTransactionId}`);
           if (!transactionInfo?.expiresDate) {
@@ -311,6 +322,45 @@ export class AppleNotificationsService implements OnModuleInit {
     payment.status = PaymentStatus.COMPLETED;
     const paymentDocument = await this.paymentService.createPayment(payment);
 
+    //handle user grants
+    user.validSubscriptionDate = this.subscriptionDateCalculator(productId as ProductIds);
+    await user.save();
+
+    console.log(payment, user);
+  }
+  private async changeSubscriptionHandler(
+    notificationUUID: string,
+    notificationType: string,
+    subtype: string,
+    environment: string,
+    originalTransactionId: string,
+    productId: string,
+    appAccountToken: string,
+    transactionInfo: DecodedSignedTransaction,
+    renewalInfo: DecodedSignedRenewalInfo
+  ) {
+    const user = await this.userService.getUserByUsername(appAccountToken);
+
+    const payment = new Payment();
+    payment.notificationSubtype = subtype;
+    payment.appleRenewalInfo = renewalInfo;
+    payment.appleTransactionInfo = transactionInfo;
+    payment.userId = user._id;
+    payment.notificationType = notificationType;
+    payment.transactionId = originalTransactionId;
+    payment.productId = productId;
+    payment.environment = environment;
+    payment.amount = transactionInfo.price;
+    payment.currency = transactionInfo.currency;
+    payment.status = PaymentStatus.COMPLETED;
+
+    if (subtype && subtype === 'DOWNGRADE') {
+    } else if (subtype && subtype === 'UPGRADE') {
+    }
+
+    //handle payment creation
+
+    const paymentDocument = await this.paymentService.createPayment(payment);
     //handle user grants
     user.validSubscriptionDate = this.subscriptionDateCalculator(productId as ProductIds);
     await user.save();
