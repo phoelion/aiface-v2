@@ -271,9 +271,8 @@ export class AppleNotificationsService implements OnModuleInit {
     }
   }
 
-  private subscriptionDateCalculator(productId: ProductIds): Date {
-    const currentTime = new Date();
-    const result = new Date(currentTime);
+  private subscriptionDateCalculator(productId: ProductIds, time = new Date()): Date {
+    const result = new Date(time);
 
     switch (productId) {
       case ProductIds.ANNUAL:
@@ -358,11 +357,9 @@ export class AppleNotificationsService implements OnModuleInit {
     } else if (subtype && subtype === 'UPGRADE') {
     }
 
-    //handle payment creation
-
     const paymentDocument = await this.paymentService.createPayment(payment);
-    //handle user grants
-    user.validSubscriptionDate = this.subscriptionDateCalculator(productId as ProductIds);
+
+    user.validSubscriptionDate = this.subscriptionDateCalculator(productId as ProductIds, user.validSubscriptionDate);
     await user.save();
 
     console.log(payment, user);
