@@ -10,5 +10,7 @@ export class PaymentsService {
     private readonly userService: UsersService
   ) {}
 
-  public async createPayment(payment: Payment) {}
+  public async createPayment(payment: Payment) {
+    return this.paymentModel.create(payment);
+  }
 }
