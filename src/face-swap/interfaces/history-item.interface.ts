@@ -6,5 +6,6 @@ export interface IHistoryItem {
   isLoading: boolean;
   message: string;
   resultUrl: string | null;
+  thumbnailImageUrl: string | null;
   type: SwapTypesEnum;
 }

@@ -27,6 +27,9 @@ export class UserRequests {
   @Prop({ type: String })
   secondFile: string;
 
+  @Prop({ type: String })
+  thumbnailImage: string;
+
   @Prop({ type: String, default: null })
   result: string;
 

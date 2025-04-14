@@ -64,7 +64,8 @@ export class UsersService {
     result: string,
     type: SwapTypesEnum,
     status: RequestStatusesEnum,
-    addedToUserHistory: boolean
+    addedToUserHistory: boolean,
+    thumbnailImage: string
   ) {
     return this.userRequestsModel.create({
       user: userId,
@@ -76,6 +77,7 @@ export class UsersService {
       type,
       status,
       addedToUserHistory,
+      thumbnailImage,
     });
   }
 

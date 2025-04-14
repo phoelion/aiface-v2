@@ -15,7 +15,7 @@ import { MessagesEnum } from '../notification/enums/messages.enum';
 import { SwapTypesEnum } from '../users/enums/swap-types.enum';
 import { RequestStatusesEnum } from '../users/enums/request-statuses.enum';
 import { audioExtractor, compressImage, imageToBase64, newFpsReducer, videoAudioMerger } from '../shared/utils/file.service';
-import { FPS, LOADING_VIDEO_URL, PHOTO_TEMPLATES_BASE_PATH, PUBLIC_BASE_URL, VIDEO_TEMPLATES_BASE_PATH } from '../config/app-constants';
+import { FPS, LOADING_VIDEO_URL, PHOTO_TEMPLATES_BASE_PATH, PUBLIC_BASE_PATH, PUBLIC_BASE_URL, VIDEO_TEMPLATES_BASE_PATH } from '../config/app-constants';
 import { IVideoResult } from './interfaces/video-result';
 import { downloadFile } from '../shared/utils/downloader';
 import { TemplateTypeEnum } from '../template/enums/template-type.enum';
@@ -39,9 +39,13 @@ export class FaceSwapService {
   private async photoSwapLogAndNotificationHandler(user: User, firstImageName: string, secondImageName: string, templateId = null, status: RequestStatusesEnum, result: string, message?: string) {
     const toBeSendMessage =
       status === RequestStatusesEnum.SUCCESS ? MessagesEnum.SUCCESS_SWAP.replace('{{user}}', user._id) : MessagesEnum.FAILED_SWAP.replace('{{user}}', user._id).replace('{{reason}}', message);
-    console.log(user, user.autoAddToHistory);
+
     await this.notificationService.sendNotification(toBeSendMessage);
-    return this.userService.createHistory(user._id, null, templateId, firstImageName, secondImageName, result, SwapTypesEnum.IMAGE, status, user.autoAddToHistory);
+
+    const resultImagePath = join(PUBLIC_BASE_PATH, result);
+
+    const thumbnailImage = await compressImage(resultImagePath, PUBLIC_BASE_PATH, result.split('/')[1], 340);
+    return this.userService.createHistory(user._id, null, templateId, firstImageName, secondImageName, result, SwapTypesEnum.IMAGE, status, user.autoAddToHistory, thumbnailImage);
   }
 
   private async photoSwapLogAndNotificationHandlerWithUserId(
@@ -433,6 +437,7 @@ export class FaceSwapService {
       }
       let result: IHistoryItem = {
         id: history.id,
+        thumbnailImageUrl: null,
         resultUrl: res.vidUrl,
         message: res.message,
         type: history.type,
@@ -449,6 +454,7 @@ export class FaceSwapService {
   async prepareImageHistory(history: UserRequests): Promise<IHistoryItem> {
     const result: IHistoryItem = {
       id: history.id,
+      thumbnailImageUrl: `${PUBLIC_BASE_URL}/${history.thumbnailImage}`,
       resultUrl: `${PUBLIC_BASE_URL}/${history.result}`,
       message: 'image is ready',
       type: history.type,
