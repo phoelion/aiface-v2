@@ -6,8 +6,10 @@ export type PaymentDocument = Payment & Document;
 export enum PaymentStatus {
   PENDING = 'pending',
   COMPLETED = 'completed',
+  RENEWED = 'renewed',
   FAILED = 'failed',
   REFUNDED = 'refunded',
+  EXPIRED = 'expired',
   CANCELLED = 'cancelled',
 }
 

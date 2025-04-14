@@ -24,13 +24,15 @@ import { AuthGuard } from '../common/guards/auth.guard';
 import { RequestWithUser } from '../common/interfaces/request-with-user';
 
 import { DevGuard } from '../common/guards/dev.guard';
+import { UsersService } from 'src/users/users.service';
 
 @Controller('face-swap')
 @UseInterceptors(ClassSerializerInterceptor)
 export class FaceSwapController {
   constructor(
     private readonly faceSwapService: FaceSwapService,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    private readonly usersService: UsersService
   ) {}
 
   @Post('/photo-swap')
@@ -56,6 +58,10 @@ export class FaceSwapController {
       throw new BadRequestException('you must upload images');
     }
 
+    if ((await this.usersService.userCanTry(req.user._id)) === false) {
+      throw new BadRequestException("you don't have any valid subscription.");
+    }
+
     const swapResult = await this.faceSwapService.photoSwap(files.firstImage[0], files.secondImage[0], req.user._id);
     const finalUrl = `${PUBLIC_BASE_URL}/${swapResult.result}`;
     return {
@@ -71,7 +77,9 @@ export class FaceSwapController {
   @UseInterceptors(FileInterceptor('image', MULTER_OPTIONS_PUBLIC))
   async swapWithTemplatePhotos(@Req() req: RequestWithUser, @UploadedFile() image: Express.Multer.File, @Body('templateId') templateId: string) {
     if (!image) throw new BadRequestException('you must upload an image');
-
+    if ((await this.usersService.userCanTry(req.user._id)) === false) {
+      throw new BadRequestException("you don't have any valid subscription.");
+    }
     const swapResult = await this.faceSwapService.templatePhotoSwap(image, templateId, req.user._id);
     const finalUrl = `${PUBLIC_BASE_URL}/${swapResult.result}`;
     return {

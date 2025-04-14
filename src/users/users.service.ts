@@ -116,4 +116,15 @@ export class UsersService {
   async addToHistory(userId: string, historyId: string) {
     return this.userRequestsModel.findOneAndUpdate({ user: userId, _id: historyId }, { addedToUserHistory: true });
   }
+
+  async userCanTry(userId: string): Promise<boolean> {
+    const user = await this.userModel.findById(userId);
+    if (!user) return false;
+
+    if (user.validSubscriptionDate > new Date()) {
+      return true;
+    }
+
+    return false;
+  }
 }

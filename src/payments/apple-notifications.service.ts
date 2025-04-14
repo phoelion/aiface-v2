@@ -192,6 +192,14 @@ export class AppleNotificationsService implements OnModuleInit {
 
           break;
 
+        case NotificationTypeV2.DID_RENEW:
+          this.logger.log(`Handling SUBSCRIBED event for ${originalTransactionId}`);
+          if (!transactionInfo?.expiresDate) {
+            this.logger.warn(`SUBSCRIBED event for ${originalTransactionId} missing expiresDate.`);
+          }
+          await this.renewSubscriptionHandler(notificationUUID, notificationType, subtype, environment, originalTransactionId, productId, appAccountToken, transactionInfo, renewalInfo);
+
+          break;
         case NotificationTypeV2.DID_CHANGE_RENEWAL_PREF:
           this.logger.log(`Handling SUBSCRIBED event for ${originalTransactionId}`);
           if (!transactionInfo?.expiresDate) {
@@ -212,48 +220,20 @@ export class AppleNotificationsService implements OnModuleInit {
           break;
 
         case NotificationTypeV2.EXPIRED:
-          this.logger.log(`Handling EXPIRED event for ${originalTransactionId}`);
-          // Example: await this.subscriptionService.revokeAccess(originalTransactionId, 'EXPIRED', subtype, appAccountToken);
-          break;
-
-        case NotificationTypeV2.DID_FAIL_TO_RENEW:
-          this.logger.log(`Handling DID_FAIL_TO_RENEW event for ${originalTransactionId}`);
-          // Example: await this.subscriptionService.updateStatus(originalTransactionId, 'BILLING_ISSUE', subtype, appAccountToken);
-          break;
+          this.logger.log(`Handling SUBSCRIBED event for ${originalTransactionId}`);
+          if (!transactionInfo?.expiresDate) {
+            this.logger.warn(`SUBSCRIBED event for ${originalTransactionId} missing expiresDate.`);
+          }
+          await this.expireSubscriptionHandler(notificationUUID, notificationType, subtype, environment, originalTransactionId, productId, appAccountToken, transactionInfo, renewalInfo);
 
         case NotificationTypeV2.GRACE_PERIOD_EXPIRED:
-          this.logger.log(`Handling GRACE_PERIOD_EXPIRED event for ${originalTransactionId}`);
-          // Example: await this.subscriptionService.revokeAccess(originalTransactionId, 'GRACE_PERIOD_EXPIRED', subtype, appAccountToken);
-          break;
+          this.logger.log(`Handling SUBSCRIBED event for ${originalTransactionId}`);
+          if (!transactionInfo?.expiresDate) {
+            this.logger.warn(`SUBSCRIBED event for ${originalTransactionId} missing expiresDate.`);
+          }
+          await this.expireSubscriptionHandler(notificationUUID, notificationType, subtype, environment, originalTransactionId, productId, appAccountToken, transactionInfo, renewalInfo);
 
-        case NotificationTypeV2.PRICE_INCREASE: // Note: Library might use different casing or enum name
-          this.logger.log(`Handling PRICE_INCREASE event for ${originalTransactionId}`);
-          // Example: await this.subscriptionService.notifyPriceIncrease(originalTransactionId, renewalInfo, appAccountToken);
-          break;
-
-        case NotificationTypeV2.REFUND:
-          this.logger.log(`Handling REFUND event for ${transactionId} (Original: ${originalTransactionId})`);
-          // Example: await this.subscriptionService.processRefund(transactionId, originalTransactionId, appAccountToken);
-          break;
-
-        case NotificationTypeV2.CONSUMPTION_REQUEST:
-          this.logger.log(`Handling CONSUMPTION_REQUEST for ${transactionId}`);
-          // Example: await this.iapService.creditConsumable(transactionId, appAccountToken);
-          break;
-
-        case NotificationTypeV2.RENEWAL_EXTENDED:
-          this.logger.log(`Handling RENEWAL_EXTENDED for ${originalTransactionId}`);
-          // Example: await this.subscriptionService.updateRenewalDate(originalTransactionId, renewalInfo.renewalDate);
-          break;
-
-        case NotificationTypeV2.REVOKE:
-          this.logger.log(`Handling REVOKE for ${originalTransactionId}`);
-          // Example: await this.subscriptionService.revokeAccess(originalTransactionId, 'REVOKED', subtype, appAccountToken);
-          break;
-
-        // Add other notification types from NotificationTypeV2 enum as needed
-        // e.g., OFFER_REDEEMED, RENEWAL_EXTENSION, TEST
-
+        //todo: refunded ones
         default:
           // Use exhaustive check if possible or log unhandled types
           this.logger.warn(`Received unhandled notification type: ${notificationType} (Subtype: ${subtype}) for UUID: ${notificationUUID}`);
@@ -305,7 +285,7 @@ export class AppleNotificationsService implements OnModuleInit {
     transactionInfo: DecodedSignedTransaction,
     renewalInfo: DecodedSignedRenewalInfo
   ) {
-    const user = await this.userService.getUserByUsername(appAccountToken.toUpperCase());
+    const user = await this.userService.getUserByUsername(appAccountToken);
     //handle payment creation
     const payment = new Payment();
     payment.notificationSubtype = subtype;
@@ -324,9 +304,70 @@ export class AppleNotificationsService implements OnModuleInit {
     //handle user grants
     user.validSubscriptionDate = this.subscriptionDateCalculator(productId as ProductIds);
     await user.save();
-
-    console.log(payment, user);
   }
+  private async renewSubscriptionHandler(
+    notificationUUID: string,
+    notificationType: string,
+    subtype: string,
+    environment: string,
+    originalTransactionId: string,
+    productId: string,
+    appAccountToken: string,
+    transactionInfo: DecodedSignedTransaction,
+    renewalInfo: DecodedSignedRenewalInfo
+  ) {
+    const user = await this.userService.getUserByUsername(appAccountToken);
+    //handle payment creation
+    const payment = new Payment();
+    payment.notificationSubtype = subtype;
+    payment.appleRenewalInfo = renewalInfo;
+    payment.appleTransactionInfo = transactionInfo;
+    payment.userId = user._id;
+    payment.notificationType = notificationType;
+    payment.transactionId = originalTransactionId;
+    payment.productId = productId;
+    payment.environment = environment;
+    payment.amount = transactionInfo.price;
+    payment.currency = transactionInfo.currency;
+    payment.status = PaymentStatus.RENEWED;
+    const paymentDocument = await this.paymentService.createPayment(payment);
+
+    //handle user grants
+    user.validSubscriptionDate = this.subscriptionDateCalculator(productId as ProductIds, user.validSubscriptionDate);
+    await user.save();
+  }
+  private async expireSubscriptionHandler(
+    notificationUUID: string,
+    notificationType: string,
+    subtype: string,
+    environment: string,
+    originalTransactionId: string,
+    productId: string,
+    appAccountToken: string,
+    transactionInfo: DecodedSignedTransaction,
+    renewalInfo: DecodedSignedRenewalInfo
+  ) {
+    const user = await this.userService.getUserByUsername(appAccountToken);
+    //handle payment creation
+    const payment = new Payment();
+    payment.notificationSubtype = subtype;
+    payment.appleRenewalInfo = renewalInfo;
+    payment.appleTransactionInfo = transactionInfo;
+    payment.userId = user._id;
+    payment.notificationType = notificationType;
+    payment.transactionId = originalTransactionId;
+    payment.productId = productId;
+    payment.environment = environment;
+    payment.amount = transactionInfo.price;
+    payment.currency = transactionInfo.currency;
+    payment.status = PaymentStatus.EXPIRED;
+    const paymentDocument = await this.paymentService.createPayment(payment);
+
+    //handle user grants
+    user.validSubscriptionDate = new Date();
+    await user.save();
+  }
+
   private async changeSubscriptionHandler(
     notificationUUID: string,
     notificationType: string,
