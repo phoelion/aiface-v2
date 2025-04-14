@@ -340,7 +340,7 @@ export class AppleNotificationsService implements OnModuleInit {
     renewalInfo: DecodedSignedRenewalInfo
   ) {
     const user = await this.userService.getUserByUsername(appAccountToken.toLocaleLowerCase());
-
+    console.log(appAccountToken.toLocaleLowerCase(), user);
     const payment = new Payment();
     payment.notificationSubtype = subtype;
     payment.appleRenewalInfo = renewalInfo;
