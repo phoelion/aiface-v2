@@ -306,7 +306,7 @@ export class AppleNotificationsService implements OnModuleInit {
     transactionInfo: DecodedSignedTransaction,
     renewalInfo: DecodedSignedRenewalInfo
   ) {
-    const user = await this.userService.getUserByUsername(appAccountToken.toLocaleLowerCase());
+    const user = await this.userService.getUserByUsername(appAccountToken.toUpperCase());
     //handle payment creation
     const payment = new Payment();
     payment.notificationSubtype = subtype;
@@ -339,8 +339,8 @@ export class AppleNotificationsService implements OnModuleInit {
     transactionInfo: DecodedSignedTransaction,
     renewalInfo: DecodedSignedRenewalInfo
   ) {
-    const user = await this.userService.getUserByUsername(appAccountToken.toLocaleLowerCase());
-    console.log(appAccountToken.toLocaleLowerCase(), user);
+    const user = await this.userService.getUserByUsername(appAccountToken.toUpperCase());
+
     const payment = new Payment();
     payment.notificationSubtype = subtype;
     payment.appleRenewalInfo = renewalInfo;
