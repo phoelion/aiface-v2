@@ -359,7 +359,7 @@ export class AppleNotificationsService implements OnModuleInit {
 
     const paymentDocument = await this.paymentService.createPayment(payment);
 
-    user.validSubscriptionDate = this.subscriptionDateCalculator(productId as ProductIds, user.validSubscriptionDate);
+    user.validSubscriptionDate = this.subscriptionDateCalculator(renewalInfo.autoRenewProductId as ProductIds, user.validSubscriptionDate);
     await user.save();
 
     console.log(payment, user);
