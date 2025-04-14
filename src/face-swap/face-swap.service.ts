@@ -63,7 +63,7 @@ export class FaceSwapService {
 
     await this.notificationService.sendNotification(toBeSendMessage);
 
-    await this.userService.createHistory(user._id, null, templateId, firstImageName, secondImageName, result, SwapTypesEnum.IMAGE, status, user.autoAddToHistory);
+    await this.userService.createHistory(user._id, null, templateId, firstImageName, secondImageName, result, SwapTypesEnum.IMAGE, status, user.autoAddToHistory, null);
   }
 
   private async videoSwapLogAndNotificationHandler(user: User, imageName: string, videoName: string, jobId: string, templateId: string, result: string, status: RequestStatusesEnum, message?: string) {
@@ -78,7 +78,7 @@ export class FaceSwapService {
     }
 
     await this.notificationService.sendNotification(toBeSendMessage);
-    return this.userService.createHistory(user._id, jobId, templateId, imageName, videoName, result, SwapTypesEnum.VIDEO, status, user.autoAddToHistory);
+    return this.userService.createHistory(user._id, jobId, templateId, imageName, videoName, result, SwapTypesEnum.VIDEO, status, user.autoAddToHistory, null);
   }
 
   private async checkFileExists(filePath: string) {
