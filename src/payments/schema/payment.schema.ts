@@ -73,9 +73,6 @@ export class Payment {
   @Prop({ required: true, enum: PaymentStatus, default: PaymentStatus.PENDING })
   status: PaymentStatus;
 
-  @Prop({ required: true, enum: PaymentMethod })
-  paymentMethod: PaymentMethod;
-
   @Prop({ required: true })
   transactionId: string;
 
