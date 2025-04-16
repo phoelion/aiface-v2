@@ -72,6 +72,8 @@ export class AppleNotificationsService implements OnModuleInit {
   }
 
   async handleNotification(signedPayload: string): Promise<void> {
+
+    
     this.logger.log('Received Apple S2S v2 Notification');
 
     if (!this.verifier) {
@@ -99,6 +101,7 @@ export class AppleNotificationsService implements OnModuleInit {
       this.logger.error(`Error processing notification (UUID: ${notificationUUID}): ${error.message}`, error.stack);
 
       if (error instanceof VerificationException) {
+        this.logger.debug(signedPayload)
         this.logger.warn(`Verification failed for notification (UUID: ${notificationUUID}): ${error.message}`);
         throw new BadRequestException(`Notification verification failed: ${error.message}`);
       }
@@ -246,18 +249,18 @@ export class AppleNotificationsService implements OnModuleInit {
     transactionInfo: DecodedSignedTransaction,
     renewalInfo: DecodedSignedRenewalInfo
   ) {
-    const user = await this.userService.getUserByUsername(appAccountToken);
-    const payment = this.createPaymentObject(notificationType, subtype, environment, originalTransactionId, productId, user._id, transactionInfo, renewalInfo, PaymentStatus.COMPLETED);
-    await this.paymentService.createPayment(payment);
+    // const user = await this.userService.getUserByUsername(appAccountToken);
+    // const payment = this.createPaymentObject(notificationType, subtype, environment, originalTransactionId, productId, user._id, transactionInfo, renewalInfo, PaymentStatus.COMPLETED);
+    // await this.paymentService.createPayment(payment);
 
-    user.validSubscriptionDate = this.subscriptionDateCalculator(renewalInfo.autoRenewProductId as ProductIds, user.validSubscriptionDate);
-    await user.save();
+    // user.validSubscriptionDate = this.subscriptionDateCalculator(renewalInfo.autoRenewProductId as ProductIds, user.validSubscriptionDate);
+    // await user.save();
 
-    const renewalUser = await this.userService.getUserByUsername(renewalInfo.appAccountToken);
-    if (renewalUser) {
-      renewalUser.validSubscriptionDate = this.subscriptionDateCalculator(productId as ProductIds, renewalUser.validSubscriptionDate);
-      await renewalUser.save();
-    }
+    // const renewalUser = await this.userService.getUserByUsername(renewalInfo.appAccountToken);
+    // if (renewalUser) {
+    //   renewalUser.validSubscriptionDate = this.subscriptionDateCalculator(productId as ProductIds, renewalUser.validSubscriptionDate);
+    //   await renewalUser.save();
+    // }
   }
 
   private createPaymentObject(
