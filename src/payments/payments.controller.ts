@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, Logger, Post, Req, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
+import { BadRequestException, Body, Controller, HttpCode, Logger, Post, Req, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { AppleNotificationDto } from './dto/apple-notification.dto';
 import { AppleNotificationsService } from './apple-notifications.service';
 import { RequestWithUser } from 'src/common/interfaces/request-with-user';
@@ -44,10 +44,15 @@ export class PaymentsController {
   @UseGuards(AuthGuard)
   @Post('/verify-receipt')
   async verifyReceipt(@Req() req: RequestWithUser, @Body('receipt') receipt: string) {
-    const verificationResult = await this.paymentService.getTransactionHistoryFromReceipt(req.user._id, receipt);
-    return {
-      success: true,
-      verificationResult,
-    };
+    try {
+      const verificationResult = await this.paymentService.getTransactionHistoryFromReceipt(req.user._id, receipt);
+      return {
+        success: true,
+        message: 'Receipt verified successfully',
+      };
+    } catch (error) {
+      this.logger.error(`Error verifying receipt: ${error.message}`, error.stack);
+      throw new BadRequestException('Receipt verification failed');
+    }
   }
 }
