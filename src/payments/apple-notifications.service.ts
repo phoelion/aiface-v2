@@ -317,6 +317,7 @@ export class AppleNotificationsService implements OnModuleInit {
     renewalInfo: DecodedSignedRenewalInfo
   ) {
     const user = await this.userService.getUserByUsername(appAccountToken);
+    const renewalUser = await this.userService.getUserByUsername(renewalInfo.appAccountToken);
     //handle payment creation
     const payment = new Payment();
     payment.notificationSubtype = subtype;
@@ -335,6 +336,11 @@ export class AppleNotificationsService implements OnModuleInit {
     //handle user grants
     user.validSubscriptionDate = this.subscriptionDateCalculator(productId as ProductIds, user.validSubscriptionDate);
     await user.save();
+
+    if (renewalUser) {
+      renewalUser.validSubscriptionDate = this.subscriptionDateCalculator(productId as ProductIds, user.validSubscriptionDate);
+      await renewalUser.save();
+    }
   }
   private async expireSubscriptionHandler(
     notificationUUID: string,
