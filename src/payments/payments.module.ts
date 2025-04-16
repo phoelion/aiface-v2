@@ -6,9 +6,10 @@ import { HttpModule } from '@nestjs/axios';
 import { UsersModule } from 'src/users/users.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Payment, PaymentSchema } from './schema/payment.schema';
+import { NotificationModule } from 'src/notification/notification.module';
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: Payment.name, schema: PaymentSchema }]), HttpModule, UsersModule],
+  imports: [MongooseModule.forFeature([{ name: Payment.name, schema: PaymentSchema }]), HttpModule, UsersModule, NotificationModule],
   controllers: [PaymentsController],
   providers: [PaymentsService, AppleNotificationsService, Logger],
 })

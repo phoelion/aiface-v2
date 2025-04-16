@@ -17,95 +17,89 @@ import { ConfigService } from '@nestjs/config';
 import { join } from 'node:path';
 import { readdirSync, readFileSync } from 'node:fs';
 import { InAppProductIds } from './enum/in-app-productIds.enum';
+import { NotificationService } from 'src/notification/notification.service';
 
 @Injectable()
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
   private client: AppStoreServerAPIClient;
-  private readonly issuerId;
-  private readonly keyId;
-  private readonly bundleId;
-  private readonly privateKeyPath;
-  private readonly environment;
   private verifier: SignedDataVerifier;
+  private readonly issuerId: string;
+  private readonly keyId: string;
+  private readonly bundleId: string;
+  private readonly privateKeyPath: string;
+  private readonly environment: Environment;
+
   constructor(
     @InjectModel(Payment.name) private readonly paymentModel,
     private readonly configService: ConfigService,
-    private readonly userService: UsersService
+    private readonly userService: UsersService,
+    private readonly notificationService: NotificationService
   ) {
     this.bundleId = this.configService.getOrThrow<string>('APPLE_BUNDLE_ID');
     this.keyId = this.configService.getOrThrow<string>('APPLE_KEY_ID');
-    const envString = this.configService.getOrThrow<string>('APPLE_ENVIRONMENT');
-    this.environment = envString === 'Production' ? Environment.PRODUCTION : Environment.SANDBOX;
-    this.issuerId = this.configService.getOrThrow<string>('APPLE_ISSUER_ID');
     this.issuerId = this.configService.getOrThrow<string>('APPLE_ISSUER_ID');
     this.privateKeyPath = this.configService.getOrThrow<string>('APPLE_PRIVATE_KEY_PATH');
+    const envString = this.configService.getOrThrow<string>('APPLE_ENVIRONMENT');
+    this.environment = envString === 'Production' ? Environment.PRODUCTION : Environment.SANDBOX;
   }
+
   async onModuleInit() {
     try {
-      const issuerId = this.configService.getOrThrow<string>('APPLE_ISSUER_ID');
-      const keyId = this.configService.getOrThrow<string>('APPLE_KEY_ID');
-      const privateKeyPath = this.configService.getOrThrow<string>('APPLE_PRIVATE_KEY_PATH');
-      const absolutePath = join(process.cwd(), privateKeyPath);
-
+      const absolutePath = join(process.cwd(), this.privateKeyPath);
       this.logger.log(`Reading private key from: ${absolutePath}`);
       const privateKey = readFileSync(absolutePath, 'utf8');
 
-      const appleRootCAs = [];
-      const certsPath = join(process.cwd(), 'certs');
-
-      const cerFiles = readdirSync(certsPath).filter((file) => file.endsWith('.cer'));
-
-      for (const cerFile of cerFiles) {
-        const certPath = join(certsPath, cerFile);
-        const certData = readFileSync(certPath);
-        appleRootCAs.push(certData);
-      }
-
-      if (appleRootCAs.length === 0) {
-        this.logger.warn('No .cer files found in certs directory');
-      } else {
-        this.logger.log(`Loaded ${appleRootCAs.length} Apple root CA certificates`);
-      }
+      const appleRootCAs = this.loadAppleRootCAs();
       this.client = new AppStoreServerAPIClient(privateKey, this.keyId, this.issuerId, this.bundleId, this.environment);
-
       this.verifier = new SignedDataVerifier(appleRootCAs, true, this.environment, this.bundleId);
-      this.logger.log('Apple SignedDataVerifier initialized successfully.');
+      this.logger.log('Apple services initialized successfully');
     } catch (error) {
-      this.logger.error(`Failed to initialize Apple SignedDataVerifier: ${error.message}`, error.stack);
-
+      this.logger.error(`Failed to initialize Apple services: ${error.message}`, error.stack);
       this.client = undefined;
-      throw new InternalServerErrorException(`Failed to initialize Apple Service: ${error.message}`);
+      throw new InternalServerErrorException(`Failed to initialize Apple services: ${error.message}`);
     }
+  }
+
+  private loadAppleRootCAs(): Buffer[] {
+    const certsPath = join(process.cwd(), 'certs');
+    const cerFiles = readdirSync(certsPath).filter((file) => file.endsWith('.cer'));
+    const appleRootCAs = cerFiles.map(cerFile => {
+      const certPath = join(certsPath, cerFile);
+      return readFileSync(certPath);
+    });
+
+    if (appleRootCAs.length === 0) {
+      this.logger.warn('No .cer files found in certs directory');
+    } else {
+      this.logger.log(`Loaded ${appleRootCAs.length} Apple root CA certificates`);
+    }
+
+    return appleRootCAs;
   }
 
   public async createPayment(payment: Payment) {
-    return this.paymentModel.create(payment);
+    const paymentDocument = await this.paymentModel.create(payment);
+    await this.notificationService.sendPurchase(payment.userId, payment.productId);
+    return paymentDocument;
   }
 
-  public async verifyReceipt(receipt: string) {}
-
-  private async creditCalculator(productId: InAppProductIds) {
-    switch (productId) {
-      case InAppProductIds.BASE:
-        return 20;
-      case InAppProductIds.PRO:
-        return 100;
-      case InAppProductIds.PREMIUM:
-        return 200;
-
-      default:
-        return 0;
-    }
+  private async creditCalculator(productId: InAppProductIds): Promise<number> {
+    const credits = {
+      [InAppProductIds.BASE]: 20,
+      [InAppProductIds.PRO]: 100,
+      [InAppProductIds.PREMIUM]: 200,
+    };
+    return credits[productId] || 0;
   }
 
-  async getTransactionHistoryFromReceipt(userId: string, appReceipt: string): Promise<string[]> {
+  async getTransactionHistoryFromReceipt(userId: string, appReceipt: string): Promise<any[]> {
     const receiptUtil = new ReceiptUtility();
     const user = await this.userService.getUser(userId);
     const transactionId = receiptUtil.extractTransactionIdFromAppReceipt(appReceipt);
 
     if (!transactionId) {
-      this.logger.warn('No transaction ID found in the receipt.');
+      this.logger.warn('No transaction ID found in the receipt');
       return [];
     }
 
@@ -115,48 +109,63 @@ export class PaymentsService {
       productTypes: [ProductType.CONSUMABLE],
     };
 
+    const decodedTransactions = await this.fetchAndProcessTransactions(transactionId, transactionHistoryRequest, userId, user);
+    return decodedTransactions;
+  }
+
+  private async fetchAndProcessTransactions(
+    transactionId: string,
+    request: TransactionHistoryRequest,
+    userId: string,
+    user: any
+  ): Promise<any[]> {
     let response: HistoryResponse | null = null;
-    let transactions: string[] = [];
     let decodedTransactions = [];
+
     do {
       const revisionToken = response?.revision ?? null;
-
-      response = await this.client.getTransactionHistory(transactionId, revisionToken, transactionHistoryRequest, GetTransactionHistoryVersion.V2);
+      response = await this.client.getTransactionHistory(
+        transactionId,
+        revisionToken,
+        request,
+        GetTransactionHistoryVersion.V2
+      );
 
       for (const transaction of response?.signedTransactions ?? []) {
         const decodedTransaction = await this.verifier.verifyAndDecodeTransaction(transaction);
         decodedTransactions.push(decodedTransaction);
-      }
-
-      if (response?.signedTransactions) {
-        transactions = transactions.concat(response.signedTransactions);
+        await this.processTransaction(decodedTransaction, userId, user);
       }
     } while (response?.hasMore);
 
-    for (const transaction of decodedTransactions) {
-      var previousTransaction = await this.paymentModel.findOne({ transactionId: transaction.originalTransactionId, userId: userId });
-      if (previousTransaction) {
-        this.logger.log(`Transaction ${transaction.originalTransactionId} already exists.`);
-        continue;
-      } else {
-        const payment = new Payment();
-        payment.appleTransactionInfo = transaction;
-        payment.userId = userId;
+    return decodedTransactions;
+  }
 
-        payment.transactionId = transaction.originalTransactionId;
-        payment.productId = transaction.productId;
-        payment.environment = transaction.environment;
-        payment.amount = transaction.price;
-        payment.currency = transaction.currency;
-        payment.status = PaymentStatus.COMPLETED;
-        const paymentDocument = await this.createPayment(payment);
+  private async processTransaction(transaction: any, userId: string, user: any): Promise<void> {
+    const existingTransaction = await this.paymentModel.findOne({
+      transactionId: transaction.originalTransactionId,
+      userId: userId
+    });
 
-        const calculatedCredits = await this.creditCalculator(transaction.productId);
-        user.videoCredits = user.videoCredits + calculatedCredits;
-        await user.save();
-      }
+    if (existingTransaction) {
+      this.logger.log(`Transaction ${transaction.originalTransactionId} already exists`);
+      return;
     }
 
-    return decodedTransactions;
+    const payment = new Payment();
+    payment.appleTransactionInfo = transaction;
+    payment.userId = userId;
+    payment.transactionId = transaction.originalTransactionId;
+    payment.productId = transaction.productId;
+    payment.environment = transaction.environment;
+    payment.amount = transaction.price;
+    payment.currency = transaction.currency;
+    payment.status = PaymentStatus.COMPLETED;
+
+    await this.createPayment(payment);
+
+    const calculatedCredits = await this.creditCalculator(transaction.productId);
+    user.videoCredits = user.videoCredits + calculatedCredits;
+    await user.save();
   }
 }
