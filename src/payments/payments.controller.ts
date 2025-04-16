@@ -1,8 +1,9 @@
-import { Body, Controller, HttpCode, Logger, Post, Req, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, HttpCode, Logger, Post, Req, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { AppleNotificationDto } from './dto/apple-notification.dto';
 import { AppleNotificationsService } from './apple-notifications.service';
 import { RequestWithUser } from 'src/common/interfaces/request-with-user';
 import { PaymentsService } from './payments.service';
+import { AuthGuard } from 'src/common/guards/auth.guard';
 
 @Controller('payments')
 export class PaymentsController {
@@ -40,10 +41,10 @@ export class PaymentsController {
     }
   }
 
+  @UseGuards(AuthGuard)
   @Post('/verify-receipt')
   async verifyReceipt(@Req() req: RequestWithUser, @Body('receipt') receipt: string) {
-    console.log(receipt);
-    const verificationResult = await this.paymentService.getTransactionHistoryFromReceipt(receipt);
+    const verificationResult = await this.paymentService.getTransactionHistoryFromReceipt(req.user._id, receipt);
     return {
       success: true,
       verificationResult,

@@ -48,7 +48,7 @@ export class UsersService {
     };
   }
 
-  public async getUser(id: string): Promise<User> {
+  public async getUser(id: string): Promise<UserDocument> {
     return this.userModel.findById(id);
   }
   public async getUserByUsername(username: string): Promise<UserDocument> {
