@@ -134,7 +134,7 @@ export class PaymentsService {
     } while (response?.hasMore);
 
     for (const transaction of decodedTransactions) {
-      var previousTransaction = await this.paymentModel.findOne({ transactionId: transaction.originalTransactionId });
+      var previousTransaction = await this.paymentModel.findOne({ transactionId: transaction.originalTransactionId, userId: userId });
       if (previousTransaction) {
         this.logger.log(`Transaction ${transaction.originalTransactionId} already exists.`);
         continue;
