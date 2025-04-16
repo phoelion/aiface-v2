@@ -1,11 +1,16 @@
 import { Body, Controller, HttpCode, Logger, Post, Req, UsePipes, ValidationPipe } from '@nestjs/common';
 import { AppleNotificationDto } from './dto/apple-notification.dto';
 import { AppleNotificationsService } from './apple-notifications.service';
+import { RequestWithUser } from 'src/common/interfaces/request-with-user';
+import { PaymentsService } from './payments.service';
 
 @Controller('payments')
 export class PaymentsController {
   private readonly logger = new Logger(PaymentsController.name);
-  constructor(private readonly appleNotificationsService: AppleNotificationsService) {}
+  constructor(
+    private readonly appleNotificationsService: AppleNotificationsService,
+    private readonly paymentService: PaymentsService
+  ) {}
 
   @Post('/webhooks/apple-notifications') // Endpoint path: /apple/notifications/v2
   @HttpCode(200) // Respond 200 OK immediately upon successful receipt *and start* of processing
@@ -33,5 +38,15 @@ export class PaymentsController {
       // (e.g., returns 400 for BadRequestException, 500 for InternalServerErrorException)
       throw error;
     }
+  }
+
+  @Post('/verify-receipt')
+  async verifyReceipt(@Req() req: RequestWithUser, @Body('receipt') receipt: string) {
+    console.log(receipt);
+    const verificationResult = await this.paymentService.getTransactionHistoryFromReceipt(receipt);
+    return {
+      success: true,
+      verificationResult,
+    };
   }
 }
