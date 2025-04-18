@@ -28,6 +28,7 @@ export class AppleNotificationsService implements OnModuleInit {
     private readonly notificationService: NotificationService
   ) {
     this.bundleId = this.configService.getOrThrow<string>('APPLE_BUNDLE_ID');
+    this.appAppleId = this.configService.getOrThrow<string>('APP_APPLE_ID') as unknown as number;
     const envString = this.configService.getOrThrow<string>('APPLE_ENVIRONMENT');
     this.environment = this.configService.get<string>('NODE_ENV').toLowerCase() === 'production' ? Environment.PRODUCTION : Environment.SANDBOX;
 
