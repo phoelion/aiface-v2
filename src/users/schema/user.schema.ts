@@ -23,7 +23,7 @@ export class User {
   @Prop({ type: Object })
   token: { token: string; expires: Date };
 
-  @Prop({ default: 400 })
+  @Prop({ default: 0 })
   videoCredits: number;
 
   @Prop({ default: new Date() })
