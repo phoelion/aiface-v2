@@ -29,6 +29,7 @@ export class PaymentsService {
   private readonly bundleId: string;
   private readonly privateKeyPath: string;
   private readonly environment: Environment;
+  private readonly appAppleId: number;
 
   constructor(
     @InjectModel(Payment.name) private readonly paymentModel,
@@ -37,11 +38,11 @@ export class PaymentsService {
     private readonly notificationService: NotificationService
   ) {
     this.bundleId = this.configService.getOrThrow<string>('APPLE_BUNDLE_ID');
+    this.appAppleId = this.configService.getOrThrow<string>('APP_APPLE_ID') as unknown as number;
     this.keyId = this.configService.getOrThrow<string>('APPLE_KEY_ID');
     this.issuerId = this.configService.getOrThrow<string>('APPLE_ISSUER_ID');
     this.privateKeyPath = this.configService.getOrThrow<string>('APPLE_PRIVATE_KEY_PATH');
-    const envString = this.configService.getOrThrow<string>('APPLE_ENVIRONMENT');
-    this.environment = envString === 'Production' ? Environment.PRODUCTION : Environment.SANDBOX;
+    this.environment = this.configService.get<string>('NODE_ENV').toLowerCase() === 'production' ? Environment.PRODUCTION : Environment.SANDBOX;
   }
 
   async onModuleInit() {
@@ -52,7 +53,11 @@ export class PaymentsService {
 
       const appleRootCAs = this.loadAppleRootCAs();
       this.client = new AppStoreServerAPIClient(privateKey, this.keyId, this.issuerId, this.bundleId, this.environment);
-      this.verifier = new SignedDataVerifier(appleRootCAs, true, this.environment, this.bundleId);
+      if (this.configService.get<string>('NODE_ENV').toLowerCase() === 'production') {
+        this.verifier = new SignedDataVerifier(appleRootCAs, true, this.environment, this.bundleId, this.appAppleId);
+      } else {
+        this.verifier = new SignedDataVerifier(appleRootCAs, true, this.environment, this.bundleId);
+      }
       this.logger.log('Apple services initialized successfully');
     } catch (error) {
       this.logger.error(`Failed to initialize Apple services: ${error.message}`, error.stack);
@@ -64,7 +69,7 @@ export class PaymentsService {
   private loadAppleRootCAs(): Buffer[] {
     const certsPath = join(process.cwd(), 'certs');
     const cerFiles = readdirSync(certsPath).filter((file) => file.endsWith('.cer'));
-    const appleRootCAs = cerFiles.map(cerFile => {
+    const appleRootCAs = cerFiles.map((cerFile) => {
       const certPath = join(certsPath, cerFile);
       return readFileSync(certPath);
     });
@@ -113,23 +118,13 @@ export class PaymentsService {
     return decodedTransactions;
   }
 
-  private async fetchAndProcessTransactions(
-    transactionId: string,
-    request: TransactionHistoryRequest,
-    userId: string,
-    user: any
-  ): Promise<any[]> {
+  private async fetchAndProcessTransactions(transactionId: string, request: TransactionHistoryRequest, userId: string, user: any): Promise<any[]> {
     let response: HistoryResponse | null = null;
     let decodedTransactions = [];
 
     do {
       const revisionToken = response?.revision ?? null;
-      response = await this.client.getTransactionHistory(
-        transactionId,
-        revisionToken,
-        request,
-        GetTransactionHistoryVersion.V2
-      );
+      response = await this.client.getTransactionHistory(transactionId, revisionToken, request, GetTransactionHistoryVersion.V2);
 
       for (const transaction of response?.signedTransactions ?? []) {
         const decodedTransaction = await this.verifier.verifyAndDecodeTransaction(transaction);
@@ -144,7 +139,7 @@ export class PaymentsService {
   private async processTransaction(transaction: any, userId: string, user: any): Promise<void> {
     const existingTransaction = await this.paymentModel.findOne({
       transactionId: transaction.originalTransactionId,
-      userId: userId
+      userId: userId,
     });
 
     if (existingTransaction) {
@@ -169,15 +164,12 @@ export class PaymentsService {
     await user.save();
   }
 
-  async aaaa (data) {
-    const a = new SignedDataVerifier(this.loadAppleRootCAs(), true, Environment.PRODUCTION, this.bundleId,1632392310)
-    
-    const b = await a.verifyAndDecodeNotification(data)
-
-    console.log();
-    
-    //@ts-ignore
-    const c = a.verifyAndDecodeTransaction(b.data.signedTransactionInfo)
-    return c
+  async aaaa(data) {
+    // const a =
+    // const b = await a.verifyAndDecodeNotification(data);
+    // console.log();
+    // //@ts-ignore
+    // const c = a.verifyAndDecodeTransaction(b.data.signedTransactionInfo);
+    // return c;
   }
 }

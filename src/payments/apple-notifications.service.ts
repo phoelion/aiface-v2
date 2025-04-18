@@ -19,6 +19,7 @@ export class AppleNotificationsService implements OnModuleInit {
   private processedNotifications = new Set<string>();
   private environment: Environment;
   private bundleId: string;
+  private readonly appAppleId: number;
 
   constructor(
     private readonly configService: ConfigService,
@@ -28,7 +29,7 @@ export class AppleNotificationsService implements OnModuleInit {
   ) {
     this.bundleId = this.configService.getOrThrow<string>('APPLE_BUNDLE_ID');
     const envString = this.configService.getOrThrow<string>('APPLE_ENVIRONMENT');
-    this.environment = envString === 'Production' ? Environment.PRODUCTION : Environment.SANDBOX;
+    this.environment = this.configService.get<string>('NODE_ENV').toLowerCase() === 'production' ? Environment.PRODUCTION : Environment.SANDBOX;
 
     if (!this.configService.get<string>('APPLE_ISSUER_ID')) throw new Error('Missing APPLE_ISSUER_ID config');
     if (!this.configService.get<string>('APPLE_KEY_ID')) throw new Error('Missing APPLE_KEY_ID config');
@@ -62,7 +63,12 @@ export class AppleNotificationsService implements OnModuleInit {
         this.logger.log(`Loaded ${appleRootCAs.length} Apple root CA certificates`);
       }
 
-      this.verifier = new SignedDataVerifier(appleRootCAs, true, this.environment, this.bundleId);
+      if (this.configService.get<string>('NODE_ENV').toLowerCase() === 'production') {
+        this.verifier = new SignedDataVerifier(appleRootCAs, true, this.environment, this.bundleId, this.appAppleId);
+      } else {
+        this.verifier = new SignedDataVerifier(appleRootCAs, true, this.environment, this.bundleId);
+      }
+
       this.logger.log('Apple SignedDataVerifier initialized successfully.');
     } catch (error) {
       this.logger.error(`Failed to initialize Apple SignedDataVerifier: ${error.message}`, error.stack);
@@ -72,8 +78,6 @@ export class AppleNotificationsService implements OnModuleInit {
   }
 
   async handleNotification(signedPayload: string): Promise<void> {
-
-    
     this.logger.log('Received Apple S2S v2 Notification');
 
     if (!this.verifier) {
@@ -101,7 +105,7 @@ export class AppleNotificationsService implements OnModuleInit {
       this.logger.error(`Error processing notification (UUID: ${notificationUUID}): ${error.message}`, error.stack);
 
       if (error instanceof VerificationException) {
-        this.logger.debug(signedPayload)
+        this.logger.debug(signedPayload);
         this.logger.warn(`Verification failed for notification (UUID: ${notificationUUID}): ${error.message}`);
         throw new BadRequestException(`Notification verification failed: ${error.message}`);
       }
@@ -121,7 +125,9 @@ export class AppleNotificationsService implements OnModuleInit {
     const productId = transactionInfo?.productId || renewalInfo?.productId;
     const appAccountToken = transactionInfo?.appAccountToken;
 
-    this.logger.log(`Processing: UUID=${notificationUUID}, Type=${notificationType}, Subtype=${subtype}, Env=${environment}, OrigTxID=${originalTransactionId}, ProdID=${productId}, UserToken=${appAccountToken || 'N/A'}`);
+    this.logger.log(
+      `Processing: UUID=${notificationUUID}, Type=${notificationType}, Subtype=${subtype}, Env=${environment}, OrigTxID=${originalTransactionId}, ProdID=${productId}, UserToken=${appAccountToken || 'N/A'}`
+    );
 
     try {
       switch (notificationType) {
@@ -252,10 +258,8 @@ export class AppleNotificationsService implements OnModuleInit {
     // const user = await this.userService.getUserByUsername(appAccountToken);
     // const payment = this.createPaymentObject(notificationType, subtype, environment, originalTransactionId, productId, user._id, transactionInfo, renewalInfo, PaymentStatus.COMPLETED);
     // await this.paymentService.createPayment(payment);
-
     // user.validSubscriptionDate = this.subscriptionDateCalculator(renewalInfo.autoRenewProductId as ProductIds, user.validSubscriptionDate);
     // await user.save();
-
     // const renewalUser = await this.userService.getUserByUsername(renewalInfo.appAccountToken);
     // if (renewalUser) {
     //   renewalUser.validSubscriptionDate = this.subscriptionDateCalculator(productId as ProductIds, renewalUser.validSubscriptionDate);
