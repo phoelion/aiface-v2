@@ -278,7 +278,7 @@ export class FaceSwapService {
     }
     const targetVideo = {
       filename: template.file,
-      path: VIDEO_TEMPLATES_BASE_PATH + '/' + template.file,
+      path: join(VIDEO_TEMPLATES_BASE_PATH, template.file),
       destination: VIDEO_TEMPLATES_BASE_PATH,
     };
 
@@ -286,20 +286,19 @@ export class FaceSwapService {
     const imageName = sourceImage.filename;
 
     const videoPath = targetVideo.path;
-    const audioOutputPath = join(__dirname, '..', '..', 'public', videoName.split('.')[0] + '.mp3');
-    const reducedFPSVideo = join(__dirname, '..', '..', 'public', videoName.split('.')[0] + '_reduced' + '.mp4');
     const sourceImagePath = sourceImage.path;
 
     const resizedImageOutputPath = sourceImage.destination;
 
     const resizedImage = await compressImage(sourceImagePath, resizedImageOutputPath, imageName);
-    const res = await newFpsReducer(videoPath, FPS, reducedFPSVideo);
-    await audioExtractor(videoPath, audioOutputPath);
 
-    const videoAssetId = await this.novitaService.getVideoAssetId(reducedFPSVideo);
+    const videoAssetId = await this.novitaService.getVideoAssetId(videoPath);
+
     const encoded = this.imageToBase64(join(resizedImageOutputPath, `${resizedImage}`));
 
     const { task_id: jobId } = await this.novitaService.getJobId(videoAssetId, encoded);
+
+    console.log(jobId);
 
     const history = await this.videoSwapLogAndNotificationHandler(user, sourceImage.filename, template.file, jobId, templateId, null, RequestStatusesEnum.INIT);
     return {
@@ -360,7 +359,7 @@ export class FaceSwapService {
       finalResult = this.prepareFinalResult(prevResult.result, 'Video is ready', prevResult.jobId);
     } else {
       const videoName = prevResult.secondFile.split('.')[0];
-      const res = await this.prepareApiResult(jobId, videoName);
+      const res = await this.prepareApiResult(jobId, videoName, prevResult.templateId !== null);
 
       if (!res.isLoading && res.success) {
         await this.userService.updateVideoStatus(userId, jobId, res.vidUrl, RequestStatusesEnum.SUCCESS);
@@ -376,11 +375,11 @@ export class FaceSwapService {
     return finalResult;
   }
 
-  async prepareApiResult(jobId: string, videoName: string, error?): Promise<IVideoResult> {
+  async prepareApiResult(jobId: string, videoName: string, isTemplate: boolean, error?): Promise<IVideoResult> {
     try {
       const result = await this.novitaService.getResult(jobId);
 
-      const resultName = 'result_' + videoName + '.mp4';
+      const resultName = 'result_' + videoName + '_' + jobId + '.mp4';
       if (result?.vidUrl !== null) {
         const dnPath = join(__dirname, '..', '..', 'public', resultName);
         const fileExists = await this.checkFileExists(dnPath);
@@ -396,9 +395,20 @@ export class FaceSwapService {
 
         const finalName = 'final_' + resultName;
         let rawFilePath, audioPath;
+        if (isTemplate) {
+          rawFilePath = join(__dirname, '..', '..', 'public', resultName);
+          audioPath = join(VIDEO_TEMPLATES_BASE_PATH, videoName + '.mp3');
+          const audioExist = await this.checkFileExists(audioPath);
 
-        rawFilePath = join(__dirname, '..', '..', 'public', resultName);
-        audioPath = join(__dirname, '..', '..', 'public', videoName + '.mp3');
+          if (!audioExist) {
+            const videoPath = join(VIDEO_TEMPLATES_BASE_PATH, videoName + '.mp4');
+            const outputPath = join(VIDEO_TEMPLATES_BASE_PATH, videoName + '.mp3');
+            await audioExtractor(videoPath, outputPath);
+          }
+        } else {
+          rawFilePath = join(__dirname, '..', '..', 'public', resultName);
+          audioPath = join(__dirname, '..', '..', 'public', videoName + '.mp3');
+        }
 
         const outputPath = join(__dirname, '..', '..', 'public', finalName);
 

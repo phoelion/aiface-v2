@@ -115,6 +115,8 @@ export class FaceSwapController {
     if (!swapResult) {
       return { success: false, jobId: null, historyId: null };
     }
+
+    console.log(1);
     await this.usersService.updateCredits(req.user._id, req.user.videoCredits - toBeConsumedCredits);
     return { success: true, jobId: swapResult.jobId, historyId: swapResult.historyId };
   }
