@@ -1047,4 +1047,7 @@ export class TemplateService {
     //   }
     // }
   }
+  async getTemplateWithDetails(templateId: string) {
+    return this.templateModel.findById(templateId);
+  }
 }

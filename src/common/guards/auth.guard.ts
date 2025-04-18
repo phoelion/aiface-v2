@@ -32,6 +32,8 @@ export class AuthGuard implements CanActivate {
       if (!user) {
         return false;
       }
+      payload.videoCredits = user.videoCredits;
+
       request['user'] = payload;
       request['user.id'] = user._id;
     } catch (err: any) {

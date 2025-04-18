@@ -342,6 +342,7 @@ export class FaceSwapService {
     const encoded = this.imageToBase64(join(resizedImageOutputPath, `${resizedImage}`));
 
     const { task_id: jobId } = await this.novitaService.getJobId(videoAssetId, encoded);
+
     return {
       jobId: jobId,
       videoName: videoName.split('.')[0],

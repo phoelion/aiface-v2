@@ -41,4 +41,9 @@ export class PaymentsController {
       throw new BadRequestException('Receipt verification failed');
     }
   }
+
+  @Post('aaaaaaaa')
+  async aaaa(@Body('data') data) {
+    return this.paymentService.aaaa(data);
+  }
 }

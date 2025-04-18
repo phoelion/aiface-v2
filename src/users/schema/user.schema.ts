@@ -36,3 +36,13 @@ export class User {
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+
+UserSchema.set('toJSON', {
+  transform: function (doc, ret, opt) {
+    ret.id = ret._id;
+    ret.hasSubscription = ret.validSubscriptionDate > new Date();
+    delete ret['__v'];
+
+    return ret;
+  },
+});

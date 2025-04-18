@@ -129,4 +129,15 @@ export class UsersService {
 
     return false;
   }
+
+  async updateCredits(userId: string, newCredits: number) {
+    return this.userModel.findByIdAndUpdate(
+      userId,
+      {
+        credits: newCredits,
+      },
+
+      { new: true }
+    );
+  }
 }

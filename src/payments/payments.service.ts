@@ -168,4 +168,16 @@ export class PaymentsService {
     user.videoCredits = user.videoCredits + calculatedCredits;
     await user.save();
   }
+
+  async aaaa (data) {
+    const a = new SignedDataVerifier(this.loadAppleRootCAs(), true, Environment.PRODUCTION, this.bundleId,1632392310)
+    
+    const b = await a.verifyAndDecodeNotification(data)
+
+    console.log();
+    
+    //@ts-ignore
+    const c = a.verifyAndDecodeTransaction(b.data.signedTransactionInfo)
+    return c
+  }
 }
