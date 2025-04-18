@@ -30,7 +30,7 @@ export class AppleNotificationsService implements OnModuleInit {
     this.bundleId = this.configService.getOrThrow<string>('APPLE_BUNDLE_ID');
     this.appAppleId = this.configService.getOrThrow<string>('APP_APPLE_ID') as unknown as number;
     const envString = this.configService.getOrThrow<string>('APPLE_ENVIRONMENT');
-    this.environment = this.configService.get<string>('NODE_ENV').toLowerCase() === 'production' ? Environment.PRODUCTION : Environment.SANDBOX;
+    this.environment = this.configService.get<string>('APPLE_ENVIRONMENT').toLowerCase() === 'production' ? Environment.PRODUCTION : Environment.SANDBOX;
 
     if (!this.configService.get<string>('APPLE_ISSUER_ID')) throw new Error('Missing APPLE_ISSUER_ID config');
     if (!this.configService.get<string>('APPLE_KEY_ID')) throw new Error('Missing APPLE_KEY_ID config');
@@ -64,11 +64,7 @@ export class AppleNotificationsService implements OnModuleInit {
         this.logger.log(`Loaded ${appleRootCAs.length} Apple root CA certificates`);
       }
 
-      if (this.configService.get<string>('NODE_ENV').toLowerCase() === 'production') {
-        this.verifier = new SignedDataVerifier(appleRootCAs, true, this.environment, this.bundleId, this.appAppleId);
-      } else {
-        this.verifier = new SignedDataVerifier(appleRootCAs, true, this.environment, this.bundleId);
-      }
+      this.verifier = new SignedDataVerifier(appleRootCAs, true, this.environment, this.bundleId);
 
       this.logger.log('Apple SignedDataVerifier initialized successfully.');
     } catch (error) {

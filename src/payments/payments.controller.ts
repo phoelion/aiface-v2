@@ -42,6 +42,21 @@ export class PaymentsController {
     }
   }
 
+  @UseGuards(AuthGuard)
+  @Post('/restore')
+  async restore(@Req() req: RequestWithUser, @Body('receipt') receipt: string) {
+    try {
+      const verificationResult = await this.paymentService.getTransactionHistoryFromReceipt(req.user._id, receipt);
+      return {
+        success: true,
+        message: 'Receipt verified successfully',
+      };
+    } catch (error) {
+      this.logger.error(`Error verifying receipt: ${error.message}`, error.stack);
+      throw new BadRequestException('Receipt verification failed');
+    }
+  }
+
   @Post('aaaaaaaa')
   async aaaa(@Body('data') data) {
     return this.paymentService.aaaa(data);

@@ -42,7 +42,7 @@ export class PaymentsService {
     this.keyId = this.configService.getOrThrow<string>('APPLE_KEY_ID');
     this.issuerId = this.configService.getOrThrow<string>('APPLE_ISSUER_ID');
     this.privateKeyPath = this.configService.getOrThrow<string>('APPLE_PRIVATE_KEY_PATH');
-    this.environment = this.configService.get<string>('NODE_ENV').toLowerCase() === 'production' ? Environment.PRODUCTION : Environment.SANDBOX;
+    this.environment = this.configService.get<string>('APPLE_ENVIRONMENT').toLowerCase() === 'production' ? Environment.PRODUCTION : Environment.SANDBOX;
   }
 
   async onModuleInit() {
@@ -53,11 +53,9 @@ export class PaymentsService {
 
       const appleRootCAs = this.loadAppleRootCAs();
       this.client = new AppStoreServerAPIClient(privateKey, this.keyId, this.issuerId, this.bundleId, this.environment);
-      if (this.configService.get<string>('NODE_ENV').toLowerCase() === 'production') {
-        this.verifier = new SignedDataVerifier(appleRootCAs, true, this.environment, this.bundleId, this.appAppleId);
-      } else {
-        this.verifier = new SignedDataVerifier(appleRootCAs, true, this.environment, this.bundleId);
-      }
+
+      this.verifier = new SignedDataVerifier(appleRootCAs, true, this.environment, this.bundleId, this.appAppleId);
+
       this.logger.log('Apple services initialized successfully');
     } catch (error) {
       this.logger.error(`Failed to initialize Apple services: ${error.message}`, error.stack);
@@ -112,6 +110,26 @@ export class PaymentsService {
       sort: Order.DESCENDING,
       revoked: false,
       productTypes: [ProductType.CONSUMABLE],
+    };
+
+    const decodedTransactions = await this.fetchAndProcessTransactions(transactionId, transactionHistoryRequest, userId, user);
+    return decodedTransactions;
+  }
+
+  async restoreSubscriptions(userId: string, appReceipt: string): Promise<any[]> {
+    const receiptUtil = new ReceiptUtility();
+    const user = await this.userService.getUser(userId);
+    const transactionId = receiptUtil.extractTransactionIdFromAppReceipt(appReceipt);
+
+    if (!transactionId) {
+      this.logger.warn('No transaction ID found in the receipt');
+      return [];
+    }
+
+    const transactionHistoryRequest: TransactionHistoryRequest = {
+      sort: Order.DESCENDING,
+      revoked: false,
+      productTypes: [ProductType.AUTO_RENEWABLE],
     };
 
     const decodedTransactions = await this.fetchAndProcessTransactions(transactionId, transactionHistoryRequest, userId, user);
