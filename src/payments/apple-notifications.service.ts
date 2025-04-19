@@ -64,8 +64,7 @@ export class AppleNotificationsService implements OnModuleInit {
         this.logger.log(`Loaded ${appleRootCAs.length} Apple root CA certificates`);
       }
 
-      this.verifier = new SignedDataVerifier(appleRootCAs, true, this.environment, this.bundleId);
-
+      this.verifier = new SignedDataVerifier(appleRootCAs, true, this.environment, this.bundleId, this.appAppleId);
       this.logger.log('Apple SignedDataVerifier initialized successfully.');
     } catch (error) {
       this.logger.error(`Failed to initialize Apple SignedDataVerifier: ${error.message}`, error.stack);
