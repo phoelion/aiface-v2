@@ -200,7 +200,7 @@ export class PaymentsService {
     payment.status = PaymentStatus.COMPLETED;
 
     await this.createPayment(payment);
-
+    console.log(transaction);
     const subscriptionDate = this.subscriptionDateCalculator(transaction.productId, transaction.purchaseDate);
 
     user.validSubscriptionDate = subscriptionDate;
