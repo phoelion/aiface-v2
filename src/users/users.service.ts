@@ -134,7 +134,7 @@ export class UsersService {
     return this.userModel.findByIdAndUpdate(
       userId,
       {
-        credits: newCredits,
+        videoCredits: newCredits,
       },
 
       { new: true }
