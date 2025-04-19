@@ -46,10 +46,10 @@ export class PaymentsController {
   @Post('/restore')
   async restore(@Req() req: RequestWithUser, @Body('receipt') receipt: string) {
     try {
-      const verificationResult = await this.paymentService.getTransactionHistoryFromReceipt(req.user._id, receipt);
+      const verificationResult = await this.paymentService.restoreSubscriptions(req.user._id, receipt);
       return {
         success: true,
-        message: 'Receipt verified successfully',
+        message: 'Restored subscriptions successfully',
       };
     } catch (error) {
       this.logger.error(`Error verifying receipt: ${error.message}`, error.stack);

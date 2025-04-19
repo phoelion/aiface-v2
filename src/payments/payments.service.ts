@@ -1,7 +1,7 @@
 import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { UsersService } from 'src/users/users.service';
-import { Payment, PaymentStatus } from './schema/payment.schema';
+import { Payment, PaymentStatus, ProductIds } from './schema/payment.schema';
 import {
   AppStoreServerAPIClient,
   Environment,
@@ -132,7 +132,28 @@ export class PaymentsService {
       productTypes: [ProductType.AUTO_RENEWABLE],
     };
 
-    const decodedTransactions = await this.fetchAndProcessTransactions(transactionId, transactionHistoryRequest, userId, user);
+    const decodedTransactions = await this.fetchAndProcessTransactionsForRestore(transactionId, transactionHistoryRequest, userId, user);
+    return decodedTransactions;
+  }
+
+  private async fetchAndProcessTransactionsForRestore(transactionId: string, request: TransactionHistoryRequest, userId: string, user: any): Promise<any[]> {
+    let response: HistoryResponse | null = null;
+    let decodedTransactions = [];
+
+    do {
+      const revisionToken = response?.revision ?? null;
+      response = await this.client.getTransactionHistory(transactionId, revisionToken, request, GetTransactionHistoryVersion.V2);
+
+      for (const transaction of response?.signedTransactions ?? []) {
+        const decodedTransaction = await this.verifier.verifyAndDecodeTransaction(transaction);
+
+        decodedTransactions.push(decodedTransaction);
+      }
+    } while (response?.hasMore);
+    const latestTransaction = decodedTransactions.reduce((latest, current) => {
+      return new Date(current.expiresDate) > new Date(latest.expiresDate) ? current : latest;
+    });
+    await this.processTransactionForRestore(latestTransaction, userId, user);
     return decodedTransactions;
   }
 
@@ -154,6 +175,35 @@ export class PaymentsService {
     return decodedTransactions;
   }
 
+  private async processTransactionForRestore(transaction: any, userId: string, user: any): Promise<void> {
+    const existingTransaction = await this.paymentModel.findOne({
+      transactionId: transaction.transactionId,
+    });
+
+    if (existingTransaction) {
+      const subscriptionDate = this.subscriptionDateCalculator(transaction.productId, transaction.purchaseDate);
+      user.validSubscriptionDate = subscriptionDate;
+      await user.save();
+      this.logger.log(`Transaction ${transaction.originalTransactionId} already exists`);
+      return;
+    }
+
+    const payment = new Payment();
+    payment.appleTransactionInfo = transaction;
+    payment.userId = userId;
+    payment.transactionId = transaction.originalTransactionId;
+    payment.productId = transaction.productId;
+    payment.environment = transaction.environment;
+    payment.amount = transaction.price;
+    payment.currency = transaction.currency;
+    payment.status = PaymentStatus.COMPLETED;
+
+    await this.createPayment(payment);
+
+    const subscriptionDate = this.subscriptionDateCalculator(transaction.productId, transaction.purchaseDate);
+    user.validSubscriptionDate = subscriptionDate;
+    await user.save();
+  }
   private async processTransaction(transaction: any, userId: string, user: any): Promise<void> {
     const existingTransaction = await this.paymentModel.findOne({
       transactionId: transaction.originalTransactionId,
@@ -182,6 +232,25 @@ export class PaymentsService {
     await user.save();
   }
 
+  private subscriptionDateCalculator(productId: ProductIds, time = new Date()): Date {
+    const result = new Date(time);
+
+    switch (productId) {
+      case ProductIds.ANNUAL:
+        result.setFullYear(result.getFullYear() + 1);
+        return result;
+
+      case ProductIds.WEEKLY:
+      case ProductIds.WEEKLY_FAMILY:
+        result.setDate(result.getDate() + 7);
+        return result;
+
+      default:
+        console.log(`Unsupported product ID: ${productId}`);
+        result.setFullYear(result.getFullYear() - 1);
+        return result;
+    }
+  }
   async aaaa(data) {
     // const a =
     // const b = await a.verifyAndDecodeNotification(data);
