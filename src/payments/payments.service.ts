@@ -92,6 +92,7 @@ export class PaymentsService {
       [InAppProductIds.BASE]: 20,
       [InAppProductIds.PRO]: 100,
       [InAppProductIds.PREMIUM]: 200,
+      [InAppProductIds.SPRING_OFFER]: 500,
     };
     return credits[productId] || 0;
   }
@@ -182,7 +183,6 @@ export class PaymentsService {
 
     if (existingTransaction) {
       const subscriptionDate = this.subscriptionDateCalculator(transaction.productId, transaction.purchaseDate);
-      console.log('validSubscriptionDate', subscriptionDate);
       user.validSubscriptionDate = subscriptionDate;
       await user.save();
       this.logger.log(`Transaction ${transaction.originalTransactionId} already exists`);
@@ -200,12 +200,8 @@ export class PaymentsService {
     payment.status = PaymentStatus.COMPLETED;
 
     await this.createPayment(payment);
-    console.log(transaction);
+
     const subscriptionDate = this.subscriptionDateCalculator(transaction.productId, transaction.purchaseDate);
-
-    user.validSubscriptionDate = subscriptionDate;
-
-    console.log('validSubscriptionDateINIT', subscriptionDate);
     user.validSubscriptionDate = subscriptionDate;
     await user.save();
   }
