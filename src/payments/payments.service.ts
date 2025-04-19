@@ -182,6 +182,7 @@ export class PaymentsService {
 
     if (existingTransaction) {
       const subscriptionDate = this.subscriptionDateCalculator(transaction.productId, transaction.purchaseDate);
+      console.log('validSubscriptionDate', subscriptionDate);
       user.validSubscriptionDate = subscriptionDate;
       await user.save();
       this.logger.log(`Transaction ${transaction.originalTransactionId} already exists`);
@@ -201,6 +202,10 @@ export class PaymentsService {
     await this.createPayment(payment);
 
     const subscriptionDate = this.subscriptionDateCalculator(transaction.productId, transaction.purchaseDate);
+
+    user.validSubscriptionDate = subscriptionDate;
+
+    console.log('validSubscriptionDateINIT', subscriptionDate);
     user.validSubscriptionDate = subscriptionDate;
     await user.save();
   }
