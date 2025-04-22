@@ -372,7 +372,7 @@ export class FaceSwapService {
       finalResult = res;
     }
     delete finalResult['error'];
-    finalResult.historyId = prevResult._id;
+    finalResult.historyId = prevResult._id.toString();
     return finalResult;
   }
 
