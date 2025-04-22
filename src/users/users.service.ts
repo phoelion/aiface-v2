@@ -112,7 +112,7 @@ export class UsersService {
   }
 
   async deleteUserHistoryItem(userId: string, historyId: string) {
-    return this.userRequestsModel.deleteOne({ user: userId, _id: historyId });
+    return this.userRequestsModel.findOneAndDelete({ user: userId, _id: historyId }, { addedToUserHistory: false });
   }
 
   async addToHistory(userId: string, historyId: string) {
