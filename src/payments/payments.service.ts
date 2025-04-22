@@ -83,11 +83,11 @@ export class PaymentsService {
 
   public async createPayment(payment: Payment) {
     const paymentDocument = await this.paymentModel.create(payment);
-    await this.notificationService.sendPurchase(payment.userId, payment.productId);
+
     return paymentDocument;
   }
 
-  private async creditCalculator(productId: InAppProductIds): Promise<number> {
+  private creditCalculator(productId: InAppProductIds): number {
     const credits = {
       [InAppProductIds.BASE]: 20,
       [InAppProductIds.PRO]: 100,
@@ -169,9 +169,19 @@ export class PaymentsService {
       for (const transaction of response?.signedTransactions ?? []) {
         const decodedTransaction = await this.verifier.verifyAndDecodeTransaction(transaction);
         decodedTransactions.push(decodedTransaction);
-        await this.processTransaction(decodedTransaction, userId, user);
       }
     } while (response?.hasMore);
+
+    const latestTransaction = decodedTransactions.reduce((latest, current) => {
+      return new Date(current.expiresDate) > new Date(latest.expiresDate) ? current : latest;
+    });
+    const filteredTransactions = decodedTransactions.filter((transaction) => transaction.transactionId !== latestTransaction.transactionId);
+
+    for (let transaction of filteredTransactions) {
+      await this.processTransaction(transaction, userId, user, false);
+    }
+
+    await this.processTransaction(latestTransaction, userId, user, true);
 
     return decodedTransactions;
   }
@@ -205,7 +215,7 @@ export class PaymentsService {
     user.validSubscriptionDate = subscriptionDate;
     await user.save();
   }
-  private async processTransaction(transaction: any, userId: string, user: any): Promise<void> {
+  private async processTransaction(transaction: any, userId: string, user: any, isLastTransaction: boolean): Promise<void> {
     const existingTransaction = await this.paymentModel.findOne({
       transactionId: transaction.originalTransactionId,
       userId: userId,
@@ -228,9 +238,12 @@ export class PaymentsService {
 
     await this.createPayment(payment);
 
-    const calculatedCredits = await this.creditCalculator(transaction.productId);
-    user.videoCredits = user.videoCredits + calculatedCredits;
-    await user.save();
+    if (isLastTransaction) {
+      const credits = this.creditCalculator(transaction.productId);
+      user.videoCredits = credits + user.videoCredits;
+      await user.save();
+      await this.notificationService.sendPurchase(payment.userId, payment.productId);
+    }
   }
 
   private subscriptionDateCalculator(productId: ProductIds, time = new Date()): Date {
