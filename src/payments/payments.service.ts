@@ -188,7 +188,7 @@ export class PaymentsService {
 
   private async processTransactionForRestore(transaction: any, userId: string, user: any): Promise<void> {
     const existingTransaction = await this.paymentModel.findOne({
-      transactionId: transaction.transactionId,
+      transactionId: transaction.originalTransactionId,
     });
 
     if (existingTransaction) {
