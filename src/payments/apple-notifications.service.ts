@@ -105,7 +105,7 @@ export class AppleNotificationsService implements OnModuleInit {
         this.logger.warn(`Verification failed for notification (UUID: ${notificationUUID}): ${error.message}`);
       }
 
-      throw new InternalServerErrorException(`Internal error processing notification (UUID: ${notificationUUID}): ${error.message}`);
+      this.logger.error(`Internal error processing notification (UUID: ${notificationUUID}): ${error.message}`);
     }
   }
 
