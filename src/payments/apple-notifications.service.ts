@@ -101,7 +101,7 @@ export class AppleNotificationsService implements OnModuleInit {
       this.logger.error(`Error processing notification (UUID: ${notificationUUID}): ${error.message}`, error.stack);
 
       if (error instanceof VerificationException) {
-        this.logger.debug(signedPayload);
+        this.logger.debug(await this.verifier.verifyAndDecodeNotification(signedPayload));
         this.logger.warn(`Verification failed for notification (UUID: ${notificationUUID}): ${error.message}`);
         throw new BadRequestException(`Notification verification failed: ${error.message}`);
       }
