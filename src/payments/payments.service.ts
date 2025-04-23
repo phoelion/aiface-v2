@@ -173,6 +173,7 @@ export class PaymentsService {
       }
     } while (response?.hasMore);
 
+    console.log('decodedTransactions.length', decodedTransactions.length);
     const latestTransaction = decodedTransactions.reduce((latest, current) => {
       return new Date(current.expiresDate) > new Date(latest.expiresDate) ? current : latest;
     });
