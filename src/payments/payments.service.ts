@@ -113,6 +113,7 @@ export class PaymentsService {
       productTypes: [ProductType.CONSUMABLE],
     };
 
+    console.log(await this.verifier.verifyAndDecodeAppTransaction((await this.client.getTransactionInfo(transactionId)).signedTransactionInfo));
     const decodedTransactions = await this.fetchAndProcessTransactions(transactionId, transactionHistoryRequest, userId, user);
     return decodedTransactions;
   }
@@ -175,7 +176,6 @@ export class PaymentsService {
     const latestTransaction = decodedTransactions.reduce((latest, current) => {
       return new Date(current.expiresDate) > new Date(latest.expiresDate) ? current : latest;
     });
-    console.log(decodedTransactions);
 
     const filteredTransactions = decodedTransactions.filter((transaction) => transaction.transactionId !== latestTransaction.transactionId);
 
