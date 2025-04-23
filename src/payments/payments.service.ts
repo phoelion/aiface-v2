@@ -172,11 +172,11 @@ export class PaymentsService {
       }
     } while (response?.hasMore);
 
-    console.log(decodedTransactions);
-
     const latestTransaction = decodedTransactions.reduce((latest, current) => {
       return new Date(current.expiresDate) > new Date(latest.expiresDate) ? current : latest;
     });
+    console.log(decodedTransactions);
+
     const filteredTransactions = decodedTransactions.filter((transaction) => transaction.transactionId !== latestTransaction.transactionId);
 
     for (let transaction of filteredTransactions) {
