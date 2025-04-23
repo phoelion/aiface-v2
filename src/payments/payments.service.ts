@@ -113,7 +113,7 @@ export class PaymentsService {
       productTypes: [ProductType.CONSUMABLE],
     };
 
-    console.log(await this.verifier.verifyAndDecodeAppTransaction((await this.client.getTransactionInfo(transactionId)).signedTransactionInfo));
+    console.log(await this.verifier.verifyAndDecodeTransaction((await this.client.getTransactionInfo(transactionId)).signedTransactionInfo));
     const decodedTransactions = await this.fetchAndProcessTransactions(transactionId, transactionHistoryRequest, userId, user);
     return decodedTransactions;
   }
