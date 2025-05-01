@@ -28,7 +28,7 @@ export class AppleNotificationsService implements OnModuleInit {
     private readonly notificationService: NotificationService
   ) {
     this.bundleId = this.configService.getOrThrow<string>('APPLE_BUNDLE_ID');
-    this.appAppleId = this.configService.getOrThrow<string>('APP_APPLE_ID') as unknown as number;
+    this.appAppleId = 1632392310;
     const envString = this.configService.getOrThrow<string>('APPLE_ENVIRONMENT');
     this.environment = this.configService.get<string>('APPLE_ENVIRONMENT').toLowerCase() === 'production' ? Environment.PRODUCTION : Environment.SANDBOX;
 
@@ -65,6 +65,7 @@ export class AppleNotificationsService implements OnModuleInit {
       }
 
       this.verifier = new SignedDataVerifier(appleRootCAs, true, this.environment, this.bundleId, this.appAppleId);
+      console.log(this.verifier);
       this.logger.log('Apple SignedDataVerifier initialized successfully.');
     } catch (error) {
       this.logger.error(`Failed to initialize Apple SignedDataVerifier: ${error.message}`, error.stack);
@@ -85,6 +86,7 @@ export class AppleNotificationsService implements OnModuleInit {
 
     try {
       notificationPayload = await this.verifier.verifyAndDecodeNotification(signedPayload);
+      console.log(notificationPayload);
       this.logger.debug(`Verification successful. Type: ${notificationPayload.notificationType}, Subtype: ${notificationPayload.subtype}`);
 
       if (this.processedNotifications.has(notificationPayload.notificationUUID)) {
