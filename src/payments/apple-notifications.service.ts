@@ -65,7 +65,7 @@ export class AppleNotificationsService implements OnModuleInit {
       }
 
       this.verifier = new SignedDataVerifier(appleRootCAs, true, this.environment, this.bundleId, this.appAppleId);
-      console.log(this.verifier);
+
       this.logger.log('Apple SignedDataVerifier initialized successfully.');
     } catch (error) {
       this.logger.error(`Failed to initialize Apple SignedDataVerifier: ${error.message}`, error.stack);
@@ -86,7 +86,7 @@ export class AppleNotificationsService implements OnModuleInit {
 
     try {
       notificationPayload = await this.verifier.verifyAndDecodeNotification(signedPayload);
-      console.log(notificationPayload);
+
       this.logger.debug(`Verification successful. Type: ${notificationPayload.notificationType}, Subtype: ${notificationPayload.subtype}`);
 
       if (this.processedNotifications.has(notificationPayload.notificationUUID)) {
@@ -194,6 +194,7 @@ export class AppleNotificationsService implements OnModuleInit {
     await this.paymentService.createPayment(payment);
 
     user.validSubscriptionDate = this.subscriptionDateCalculator(productId as ProductIds);
+    await this.notificationService.sendPurchase(payment.userId, payment.productId);
     await user.save();
   }
 
@@ -220,6 +221,9 @@ export class AppleNotificationsService implements OnModuleInit {
       renewalUser.validSubscriptionDate = this.subscriptionDateCalculator(productId as ProductIds, renewalUser.validSubscriptionDate);
       await renewalUser.save();
     }
+
+    //send renewal
+    // await this.notificationService.sendPurchase(payment.userId, payment.productId);
   }
 
   private async expireSubscriptionHandler(
