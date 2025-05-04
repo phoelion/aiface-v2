@@ -141,6 +141,7 @@ export class AppleNotificationsService implements OnModuleInit {
           break;
 
         case NotificationTypeV2.EXPIRED:
+        case NotificationTypeV2.REFUND:
         case NotificationTypeV2.GRACE_PERIOD_EXPIRED:
           await this.expireSubscriptionHandler(notificationUUID, notificationType, subtype, environment, originalTransactionId, productId, appAccountToken, transactionInfo, renewalInfo);
           break;
@@ -213,7 +214,7 @@ export class AppleNotificationsService implements OnModuleInit {
     const payment = this.createPaymentObject(notificationType, subtype, environment, originalTransactionId, productId, user._id, transactionInfo, renewalInfo, PaymentStatus.RENEWED);
     await this.paymentService.createPayment(payment);
 
-    user.validSubscriptionDate = this.subscriptionDateCalculator(productId as ProductIds, user.validSubscriptionDate);
+    user.validSubscriptionDate = this.subscriptionDateCalculator(productId as ProductIds);
     await user.save();
 
     const renewalUser = await this.userService.getUserByUsername(renewalInfo.appAccountToken);
@@ -222,8 +223,7 @@ export class AppleNotificationsService implements OnModuleInit {
       await renewalUser.save();
     }
 
-    //send renewal
-    // await this.notificationService.sendPurchase(payment.userId, payment.productId);
+    await this.notificationService.sendPurchase(payment.userId, payment.productId, true);
   }
 
   private async expireSubscriptionHandler(

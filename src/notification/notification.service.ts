@@ -7,10 +7,9 @@ import { TelegramService } from '../telegram/telegram.service';
 @Injectable()
 export class NotificationService {
   constructor(
-
     private readonly oneSignalService: OneSignalService,
     private readonly configService: ConfigService,
-    private readonly telegramService: TelegramService,
+    private readonly telegramService: TelegramService
   ) {}
 
   async sendNotification(message: string): Promise<number> {
@@ -29,9 +28,15 @@ export class NotificationService {
     return this.telegramService.messageEditor(messageId, message);
   }
 
-  async sendPurchase(userId, productId) {
-    const generalMessage = MessagesEnum.PURCHASE.replace('{{id}}', userId).replace('{{plan}}', productId);
-    const message = MessagesEnum.GENERAL_PURCHASE.replace('{{plan}}', productId);
+  async sendPurchase(userId, productId, isRenewal = false) {
+    let generalMessage = MessagesEnum.PURCHASE.replace('{{id}}', userId).replace('{{plan}}', productId);
+    let message = MessagesEnum.GENERAL_PURCHASE.replace('{{plan}}', productId);
+
+    if (isRenewal) {
+      generalMessage = MessagesEnum.RENEWAL.replace('{{id}}', userId).replace('{{plan}}', productId);
+      message = MessagesEnum.GENERAL_RENEWAL.replace('{{plan}}', productId);
+    }
+
     await this.telegramService.sendPurchase(message);
     await this.sendNotification(generalMessage);
   }

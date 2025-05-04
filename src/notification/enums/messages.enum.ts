@@ -11,6 +11,8 @@ export enum MessagesEnum {
   RESULT = '📹{{id}}\n get the result\n#swap_result',
 
   PURCHASE = '🤑{{id}}\nbought a {{plan}} plan\n#purchase',
+  RENEWAL = '🤑{{id}}\n renewed a {{plan}} plan\n#purchase',
   GENERAL_PURCHASE = '🤑AiFace Soled a {{plan}}\n',
+  GENERAL_RENEWAL = '🤑AiFace Soled a {{plan}}\n',
   CONTACT_US = '📥 ContactUs\n{{user}} said:\n{{message}}\n',
 }
