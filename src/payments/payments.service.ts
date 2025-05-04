@@ -93,6 +93,7 @@ export class PaymentsService {
       [InAppProductIds.PRO]: 100,
       [InAppProductIds.PREMIUM]: 200,
       [InAppProductIds.SPRING_OFFER]: 500,
+      [InAppProductIds.VIDEO_100_OFFER]: 100,
     };
     return credits[productId] || 0;
   }
