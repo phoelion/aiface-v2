@@ -33,6 +33,9 @@ export class User {
   active: boolean;
   id: string;
   _id: string;
+
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

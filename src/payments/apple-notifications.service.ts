@@ -1,14 +1,32 @@
-import { Injectable, Logger, InternalServerErrorException, BadRequestException, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, InternalServerErrorException, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
-import { Environment, NotificationTypeV2, SignedDataVerifier, VerificationException, ResponseBodyV2DecodedPayload } from '@apple/app-store-server-library';
+import {
+  Environment,
+  NotificationTypeV2,
+  SignedDataVerifier,
+  VerificationException,
+  ResponseBodyV2DecodedPayload,
+  AppStoreServerAPIClient,
+  ConsumptionRequest,
+  ConsumptionStatus,
+  Platform,
+  DeliveryStatus,
+  AccountTenure,
+  PlayTime,
+  LifetimeDollarsRefunded,
+  LifetimeDollarsPurchased,
+  UserStatus,
+} from '@apple/app-store-server-library';
 import { UsersService } from 'src/users/users.service';
 import { Payment, PaymentStatus, ProductIds } from './schema/payment.schema';
 import { PaymentsService } from './payments.service';
 import { NotificationService } from 'src/notification/notification.service';
 import { LogsService } from 'src/applogs/app-logs.service';
 import { BackLogTypes } from 'src/applogs/model/back-logs.schema';
+import { UserDocument } from 'src/users/schema/user.schema';
+import { RefundPreference } from '@apple/app-store-server-library/dist/models/RefundPreference';
 
 type NotificationPayload = ResponseBodyV2DecodedPayload;
 type DecodedSignedTransaction = any;
@@ -21,7 +39,10 @@ export class AppleNotificationsService implements OnModuleInit {
   private processedNotifications = new Set<string>();
   private environment: Environment;
   private bundleId: string;
+  private readonly issuerId: string;
+  private readonly keyId: string;
   private readonly appAppleId: number;
+  private client: AppStoreServerAPIClient;
 
   constructor(
     private readonly configService: ConfigService,
@@ -34,7 +55,8 @@ export class AppleNotificationsService implements OnModuleInit {
     this.appAppleId = 1632392310;
     const envString = this.configService.getOrThrow<string>('APPLE_ENVIRONMENT');
     this.environment = this.configService.get<string>('APPLE_ENVIRONMENT').toLowerCase() === 'production' ? Environment.PRODUCTION : Environment.SANDBOX;
-
+    this.keyId = this.configService.getOrThrow<string>('APPLE_KEY_ID');
+    this.issuerId = this.configService.getOrThrow<string>('APPLE_ISSUER_ID');
     if (!this.configService.get<string>('APPLE_ISSUER_ID')) throw new Error('Missing APPLE_ISSUER_ID config');
     if (!this.configService.get<string>('APPLE_KEY_ID')) throw new Error('Missing APPLE_KEY_ID config');
     if (!this.configService.get<string>('APPLE_PRIVATE_KEY_PATH')) throw new Error('Missing APPLE_PRIVATE_KEY_PATH config');
@@ -68,6 +90,7 @@ export class AppleNotificationsService implements OnModuleInit {
       }
 
       this.verifier = new SignedDataVerifier(appleRootCAs, true, this.environment, this.bundleId, this.appAppleId);
+      this.client = new AppStoreServerAPIClient(privateKey, this.keyId, this.issuerId, this.bundleId, this.environment);
 
       this.logger.log('Apple SignedDataVerifier initialized successfully.');
     } catch (error) {
@@ -152,6 +175,9 @@ export class AppleNotificationsService implements OnModuleInit {
           await this.expireSubscriptionHandler(notificationUUID, notificationType, subtype, environment, originalTransactionId, productId, appAccountToken, transactionInfo, renewalInfo);
           break;
 
+        case NotificationTypeV2.CONSUMPTION_REQUEST:
+          await this.consumptionHandler(transactionInfo, transactionId, payload, appAccountToken, user);
+
         default:
           this.logger.warn(`Unhandled notification type: ${notificationType} (Subtype: ${subtype}) for UUID: ${notificationUUID}`);
           break;
@@ -163,6 +189,67 @@ export class AppleNotificationsService implements OnModuleInit {
       this.logger.error(`Error processing notification UUID ${notificationUUID}: ${processingError.message}`, processingError.stack);
       throw processingError;
     }
+  }
+
+  private daysBetween(from: Date, to: Date = new Date()): number {
+    const msPerDay = 1000 * 60 * 60 * 24;
+    const utc1 = Date.UTC(from.getFullYear(), from.getMonth(), from.getDate());
+    const utc2 = Date.UTC(to.getFullYear(), to.getMonth(), to.getDate());
+    return Math.floor((utc2 - utc1) / msPerDay);
+  }
+  private categorizeAccountTenure(startDate: Date): AccountTenure {
+    const days = this.daysBetween(startDate, new Date());
+
+    if (isNaN(days) || days < 0) {
+      return AccountTenure.UNDECLARED;
+    } else if (days <= 3) {
+      return AccountTenure.ZERO_TO_THREE_DAYS;
+    } else if (days <= 10) {
+      return AccountTenure.THREE_DAYS_TO_TEN_DAYS;
+    } else if (days <= 30) {
+      return AccountTenure.TEN_DAYS_TO_THIRTY_DAYS;
+    } else if (days <= 90) {
+      return AccountTenure.THIRTY_DAYS_TO_NINETY_DAYS;
+    } else if (days <= 180) {
+      return AccountTenure.NINETY_DAYS_TO_ONE_HUNDRED_EIGHTY_DAYS;
+    } else if (days <= 365) {
+      return AccountTenure.ONE_HUNDRED_EIGHTY_DAYS_TO_THREE_HUNDRED_SIXTY_FIVE_DAYS;
+    } else {
+      return AccountTenure.GREATER_THAN_THREE_HUNDRED_SIXTY_FIVE_DAYS;
+    }
+  }
+
+  private async consumptionHandler(transactionInfo: DecodedSignedTransaction, transactionId, notification: NotificationPayload, appAccountToken: string, user: UserDocument) {
+    const hasUserUsed = this.userService.hasUserUsed(appAccountToken);
+
+    const exampleConsumptionRequest: ConsumptionRequest = {
+      customerConsented: true,
+
+      consumptionStatus: hasUserUsed ? ConsumptionStatus.PARTIALLY_CONSUMED : ConsumptionStatus.NOT_CONSUMED,
+
+      platform: Platform.APPLE,
+
+      sampleContentProvided: false,
+
+      deliveryStatus: hasUserUsed ? DeliveryStatus.DELIVERED_AND_WORKING_PROPERLY : DeliveryStatus.DID_NOT_DELIVER_FOR_OTHER_REASON,
+
+      appAccountToken: appAccountToken,
+
+      accountTenure: this.categorizeAccountTenure(user.createdAt),
+
+      playTime: PlayTime.FIVE_TO_SIXTY_MINUTES,
+
+      lifetimeDollarsRefunded: LifetimeDollarsRefunded.UNDECLARED,
+
+      lifetimeDollarsPurchased: LifetimeDollarsPurchased.UNDECLARED,
+
+      userStatus: UserStatus.ACTIVE,
+
+      refundPreference: hasUserUsed ? RefundPreference.PREFER_DECLINE : RefundPreference.NO_PREFERENCE,
+    };
+
+    const consumptionRequestReason = notification.data.consumptionRequestReason;
+    await this.client.sendConsumptionData(transactionId, exampleConsumptionRequest);
   }
 
   private subscriptionDateCalculator(productId: ProductIds, time = new Date()): Date {
@@ -248,6 +335,8 @@ export class AppleNotificationsService implements OnModuleInit {
     await this.paymentService.createPayment(payment);
 
     user.validSubscriptionDate = new Date();
+    user.videoCredits = 0;
+
     await user.save();
   }
 

@@ -140,4 +140,13 @@ export class UsersService {
       { new: true }
     );
   }
+
+  async hasUserUsed(username: string) {
+    const user = await this.getUserByUsername(username);
+    const requests = await this.userRequestsModel.find({ user: user._id });
+    if (requests) {
+      return true;
+    }
+    return false;
+  }
 }
