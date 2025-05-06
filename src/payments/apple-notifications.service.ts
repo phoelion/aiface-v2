@@ -249,6 +249,7 @@ export class AppleNotificationsService implements OnModuleInit {
     };
 
     const consumptionRequestReason = notification.data.consumptionRequestReason;
+    await this.notificationService.sendNotification(`Refund Request Received\nUser's Reason: ${consumptionRequestReason}\n#refund`);
     await this.client.sendConsumptionData(transactionId, exampleConsumptionRequest);
   }
 
