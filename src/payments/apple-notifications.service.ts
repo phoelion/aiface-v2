@@ -7,6 +7,8 @@ import { UsersService } from 'src/users/users.service';
 import { Payment, PaymentStatus, ProductIds } from './schema/payment.schema';
 import { PaymentsService } from './payments.service';
 import { NotificationService } from 'src/notification/notification.service';
+import { LogsService } from 'src/applogs/app-logs.service';
+import { BackLogTypes } from 'src/applogs/model/back-logs.schema';
 
 type NotificationPayload = ResponseBodyV2DecodedPayload;
 type DecodedSignedTransaction = any;
@@ -25,7 +27,8 @@ export class AppleNotificationsService implements OnModuleInit {
     private readonly configService: ConfigService,
     private readonly userService: UsersService,
     private readonly paymentService: PaymentsService,
-    private readonly notificationService: NotificationService
+    private readonly notificationService: NotificationService,
+    private readonly logService: LogsService
   ) {
     this.bundleId = this.configService.getOrThrow<string>('APPLE_BUNDLE_ID');
     this.appAppleId = 1632392310;
@@ -125,6 +128,9 @@ export class AppleNotificationsService implements OnModuleInit {
     this.logger.log(
       `Processing: UUID=${notificationUUID}, Type=${notificationType}, Subtype=${subtype}, Env=${environment}, OrigTxID=${originalTransactionId}, ProdID=${productId}, UserToken=${appAccountToken || 'N/A'}`
     );
+    const user = await this.userService.getUserByUsername(appAccountToken);
+
+    await this.logService.createBackLog(user._id.toString(), BackLogTypes.APPLE_NOTIFICATION, { payload, transactionInfo });
 
     try {
       switch (notificationType) {
