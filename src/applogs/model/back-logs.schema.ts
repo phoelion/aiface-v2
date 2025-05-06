@@ -6,6 +6,7 @@ export type BackLogDocument = HydratedDocument<BackLog>;
 export enum BackLogTypes {
   RANDOM_CATEGORY_POSITIONS = 'RANDOM_CATEGORY_POSITIONS',
   NOVITA_VIDEO_SWAP = 'NOVITA_VIDEO_SWAP',
+  APPLE_NOTIFICATION = 'APPLE_NOTIFICATION',
 }
 
 @Schema({ timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } })

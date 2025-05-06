@@ -18,6 +18,8 @@ import { join } from 'node:path';
 import { readdirSync, readFileSync } from 'node:fs';
 import { InAppProductIds } from './enum/in-app-productIds.enum';
 import { NotificationService } from 'src/notification/notification.service';
+import { LogsService } from 'src/applogs/app-logs.service';
+import { BackLogTypes } from 'src/applogs/model/back-logs.schema';
 
 @Injectable()
 export class PaymentsService {
@@ -35,7 +37,8 @@ export class PaymentsService {
     @InjectModel(Payment.name) private readonly paymentModel,
     private readonly configService: ConfigService,
     private readonly userService: UsersService,
-    private readonly notificationService: NotificationService
+    private readonly notificationService: NotificationService,
+    private readonly logService: LogsService
   ) {
     this.bundleId = this.configService.getOrThrow<string>('APPLE_BUNDLE_ID');
     this.appAppleId = this.configService.getOrThrow<string>('APP_APPLE_ID') as unknown as number;
@@ -114,7 +117,10 @@ export class PaymentsService {
       productTypes: [ProductType.CONSUMABLE],
     };
 
-    console.log(await this.verifier.verifyAndDecodeTransaction((await this.client.getTransactionInfo(transactionId)).signedTransactionInfo));
+    const decodedNotif = await this.verifier.verifyAndDecodeTransaction((await this.client.getTransactionInfo(transactionId)).signedTransactionInfo);
+
+    await this.logService.createBackLog(userId, BackLogTypes.APPLE_NOTIFICATION, decodedNotif);
+
     const decodedTransactions = await this.fetchAndProcessTransactions(transactionId, transactionHistoryRequest, userId, user);
     return decodedTransactions;
   }
