@@ -183,17 +183,10 @@ export class PaymentsService {
     console.log('decodedTransactions.length', decodedTransactions.length);
 
     console.log(decodedTransactions);
-    const latestTransaction = decodedTransactions.reduce((latest, current) => {
-      return new Date(current.expiresDate) > new Date(latest.expiresDate) ? current : latest;
-    });
 
-    const filteredTransactions = decodedTransactions.filter((transaction) => transaction.transactionId !== latestTransaction.transactionId);
-
-    for (let transaction of filteredTransactions) {
-      await this.processTransaction(transaction, userId, user, false);
+    for (let transaction of decodedTransactions) {
+      await this.processTransaction(transaction, userId, user, true);
     }
-
-    await this.processTransaction(latestTransaction, userId, user, true);
 
     return decodedTransactions;
   }
