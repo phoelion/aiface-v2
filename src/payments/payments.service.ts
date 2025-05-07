@@ -41,7 +41,7 @@ export class PaymentsService {
     private readonly logService: LogsService
   ) {
     this.bundleId = this.configService.getOrThrow<string>('APPLE_BUNDLE_ID');
-    this.appAppleId = this.configService.getOrThrow<string>('APP_APPLE_ID') as unknown as number;
+    this.appAppleId = 1632392310;
     this.keyId = this.configService.getOrThrow<string>('APPLE_KEY_ID');
     this.issuerId = this.configService.getOrThrow<string>('APPLE_ISSUER_ID');
     this.privateKeyPath = this.configService.getOrThrow<string>('APPLE_PRIVATE_KEY_PATH');
@@ -181,6 +181,8 @@ export class PaymentsService {
     } while (response?.hasMore);
 
     console.log('decodedTransactions.length', decodedTransactions.length);
+
+    console.log(decodedTransactions);
     const latestTransaction = decodedTransactions.reduce((latest, current) => {
       return new Date(current.expiresDate) > new Date(latest.expiresDate) ? current : latest;
     });
