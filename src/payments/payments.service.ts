@@ -244,9 +244,9 @@ export class PaymentsService {
     await this.createPayment(payment);
 
     if (isLastTransaction) {
-      // const credits = this.creditCalculator(transaction.productId);
-      // user.videoCredits = credits + user.videoCredits;
-      // await user.save();
+      const credits = this.creditCalculator(transaction.productId);
+      user.videoCredits = credits + user.videoCredits;
+      await user.save();
       await this.notificationService.sendPurchase(payment.userId, payment.productId);
     }
   }
