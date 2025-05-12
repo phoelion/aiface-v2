@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { UsersService } from 'src/users/users.service';
 import { Payment, PaymentStatus, ProductIds } from './schema/payment.schema';
@@ -269,6 +269,29 @@ export class PaymentsService {
         result.setFullYear(result.getFullYear() - 1);
         return result;
     }
+  }
+
+  async verifyReceiptV2(userId: string, productId: InAppProductIds, extraData: object) {
+    const user = await this.userService.getUser(userId);
+
+    if (!user) {
+      throw new BadRequestException('user not found');
+    }
+
+    user.videoCredits = user.videoCredits + this.creditCalculator(productId);
+
+    const payment = new Payment();
+    payment.extraData = extraData;
+    payment.userId = userId;
+    payment.transactionId = userId;
+    payment.productId = productId;
+    payment.environment = this.configService.get<string>('APPLE_ENVIRONMENT');
+    payment.amount = 0;
+    payment.currency = 'V2Currency';
+    payment.status = PaymentStatus.COMPLETED;
+
+    await this.createPayment(payment);
+    return user.save();
   }
   async aaaa(data) {
     // const a =

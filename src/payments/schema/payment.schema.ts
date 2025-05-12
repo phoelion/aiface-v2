@@ -104,6 +104,9 @@ export class Payment {
   appleTransactionInfo?: AppleTransactionInfo;
 
   @Prop({ type: MongooseSchema.Types.Mixed })
+  extraData?: any;
+
+  @Prop({ type: MongooseSchema.Types.Mixed })
   appleRenewalInfo?: AppleRenewalInfo;
 
   @Prop()

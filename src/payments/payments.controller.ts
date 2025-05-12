@@ -4,6 +4,9 @@ import { AppleNotificationsService } from './apple-notifications.service';
 import { RequestWithUser } from 'src/common/interfaces/request-with-user';
 import { PaymentsService } from './payments.service';
 import { AuthGuard } from 'src/common/guards/auth.guard';
+import { VerifyReceiptV2Dto } from './dto/verify-receipt-v2.dto';
+import { Payment } from './schema/payment.schema';
+import { InAppProductIds } from './enum/in-app-productIds.enum';
 
 @Controller('payments')
 export class PaymentsController {
@@ -40,6 +43,21 @@ export class PaymentsController {
       this.logger.error(`Error verifying receipt: ${error.message}`, error.stack);
       throw new BadRequestException('Receipt verification failed');
     }
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('/verify-receipt-v2')
+  async verifyReceiptV2(@Req() req: RequestWithUser, @Body() body: VerifyReceiptV2Dto) {
+    if (Object.values(InAppProductIds).includes(body.productId as InAppProductIds) === false) {
+      throw new BadRequestException('invalid product Id');
+    }
+
+    const data = await this.paymentService.verifyReceiptV2(req.user._id, body.productId as InAppProductIds, body.extraData);
+    return {
+      success: true,
+      message: 'Receipt verified successfully',
+      data,
+    };
   }
 
   @UseGuards(AuthGuard)
