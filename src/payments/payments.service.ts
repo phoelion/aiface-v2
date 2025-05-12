@@ -291,6 +291,8 @@ export class PaymentsService {
     payment.status = PaymentStatus.COMPLETED;
 
     await this.createPayment(payment);
+
+    await this.notificationService.sendPurchase(payment.userId, payment.productId);
     return user.save();
   }
   async aaaa(data) {
